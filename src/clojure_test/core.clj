@@ -186,6 +186,7 @@
 (defn multi-insert-r [old new l]
   (cond
     (not (member? old l)) nil
+    (coll? (first l)) (cons (first l)(multi-insert-r (rest l)))
     (identical? (first l) old) (concat (list old new)(multi-insert-r old new (rest l)))
     :else (cons (first l) (multi-insert-r old new (rest l)))))
 
@@ -382,7 +383,7 @@
 (defn defval2 [valuezero & {:keys [valueone valuetwo] :or {valueone 42 valuetwo 43}}]
   [valuezero valueone valuetwo])
 
-(defval)
+;; (defval)
 (defval2 7 :valueone 1)
 
 (defn matchtest [x y z]
@@ -418,6 +419,12 @@
     (= index n)(first col)
     :else (pick (rest col) n :index (inc index))))
 
+(defn slice [coll beg end]
+  (-<> (drop (dec beg) coll)
+       (take (- end (dec beg)) <>)))
+
+(defn slice [coll beg end]
+  (take (inc (- end beg)) (drop (dec beg) coll)))
 
 (defn pick [col n & {:keys [index] :or {index 1}}]
   (if (= index n)
@@ -436,12 +443,7 @@
   (concat (slice coll 1 (dec n))
           (slice coll (inc n) (count coll))))
 
-(defn slice [coll beg end]
-  (take (inc (- end beg)) (drop (dec beg) coll)))
 
-(defn slice [coll beg end]
-  (-<> (drop (dec beg) coll)
-       (take (- end (dec beg)) <>)))
 
 (defn countocc [coll target & { :keys [count] :or {count 0}}]
   (cond
@@ -460,7 +462,7 @@
 
 (pick [5 6 7] 4)
 
-(defn rember* [coll target]
+(defn rember* [coll target & {:keys [res] :or {res []}}]
   (cond
     (empty? coll) '()
     (atom? (first coll)) (if (= target (first coll))
@@ -470,7 +472,70 @@
     :else (cons  (rember* (first coll) target)
                  (rember* (rest coll) target))))
 
+(defn rember* [coll target & {:keys [res] :or {res []}}]
+  (cond
+    (empty? coll) '()
+    (atom? (first coll)) (if (= target (first coll))
+                           (rember* (rest coll) target)
+                           (cons (first coll) (rember* (rest coll) target)))
+    
+    :else (cons  (rember* (first coll) target)
+                 (rember* (rest coll) target))))
 (rember* '(7 1 2 7 3 4 7) 7)
 (rember* '((7 1 2 (1 2 7)3 7) 4 7) 7)
-
 (first '((4 5 6)1 2 3))
+
+(defn insertr* [coll target new]
+  (cond
+    (empty? coll) '()
+    (atom? (first coll))(if (= target (first coll))
+                          (concat (list (first coll) new) (insertr* (rest coll) target new))
+                          (cons (first coll) (insertr* (rest coll) target new)))
+    :else (cons (insertr* (first coll) target new)
+                (insertr* (rest coll) target new))))
+
+(insertr* '(2 1 2 3 2 (2 2)) 2 7)
+
+(def nested-list '((7 1 2 (1 2 7 (1 2 3 7))3 7) 4 7))
+(first (first nested-list))
+
+(defn map-nested [f coll & {:keys [res] :or {res []} }]
+  (cond
+    (empty? coll) res
+    (atom? (first coll))(map-nested f (rest coll) :res (cons (f (first coll)) res))
+    :else (map-nested f (first coll) :res res)
+    ))
+
+
+(defn atom? [v]((complement coll?) v))
+
+(map-nested inc '(1 2 3))
+(map-nested inc '(1 (3 4) 2 3))
+
+(defn replacement [target item]
+  (if-not (= target item)
+    item))
+
+(defn rember-simple [coll target]
+  (map-nn #(replacement target %) coll))
+
+(rember-simple '(1 2 7) 7)
+(rember-simple '(7 1 2 3 7 4 5 7) 7)
+
+(defn cons-nn [x seq]
+  (if-not (nil? x)
+    (cons x seq)
+    seq))
+
+(cons-nn nil [1 2 3])
+
+(defn pwalk-a [f coll]
+  (clojure.walk/prewalk #(if (atom? %)(f %) %) coll))
+
+(defn pwalk-c [f coll]
+  (clojure.walk/prewalk #(if (coll? %)(f %) %) coll))
+
+(pwalk-c #(rember-simple % 7) nested-list)
+(pwalk-a inc [1 2 [4 5] 3])
+(pwalk-c #(multi-insert-r 2 7 %) '(2 (2 4 (5 2))))
+(pwalk-a #(inc %) '(2 (2 4 (5 2))))
