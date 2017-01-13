@@ -539,3 +539,4 @@
 (pwalk-a inc [1 2 [4 5] 3])
 (pwalk-c #(multi-insert-r 2 7 %) '(2 (2 4 (5 2))))
 (pwalk-a #(inc %) '(2 (2 4 (5 2))))
+(+ 2 2)
