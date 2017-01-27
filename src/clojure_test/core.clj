@@ -154,6 +154,7 @@
     (empty? col) '()
     (identical? (first col) x) (rest col)
     :else (cons (car col)(rember x (cdr col)))))
+
 (defn firsts [col]
   (if (every? not-empty col)
     (map first col)
@@ -472,7 +473,7 @@
     :else (cons  (rember* (first coll) target)
                  (rember* (rest coll) target))))
 
-(defn rember* [coll target & {:keys [res] :or {res []}}]
+(defn rember* [coll target]
   (cond
     (empty? coll) '()
     (atom? (first coll)) (if (= target (first coll))
@@ -481,6 +482,8 @@
     
     :else (cons  (rember* (first coll) target)
                  (rember* (rest coll) target))))
+
+
 (rember* '(7 1 2 7 3 4 7) 7)
 (rember* '((7 1 2 (1 2 7)3 7) 4 7) 7)
 (first '((4 5 6)1 2 3))
@@ -494,23 +497,67 @@
     :else (cons (insertr* (first coll) target new)
                 (insertr* (rest coll) target new))))
 
+;; (defn occur* [coll target & {:keys [n] :or {n 0}} ]
+;;   (cond
+;;     (empty? coll) n
+;;     (atom? (first coll))(if (= target (first coll))
+;;                           (occur* (rest coll) target :n (inc n))
+;;                           (occur* (rest coll) target :n n))
+;;     :else (+ (occur* (first coll) target :n n)
+;;              (occur* (rest coll) target))))
+
+(defn occur* [coll target & {:keys [n] :or {n 0}} ]
+  (cond
+    (empty? coll) n
+    (atom? (first coll))(if (= target (first coll))
+                          (occur* (rest coll) target :n (inc n))
+                          (occur* (rest coll) target :n n))
+    :else (+ (occur* (first coll) target :n n)
+             (occur* (rest coll) target))))
+
+(defn occur* [coll target]
+  (cond
+    (empty? coll) 0
+    (atom? (first coll))(if (= target (first coll))
+                          (inc  (occur* (rest coll) target))
+                          (occur* (rest coll) target))
+    :else (+ (occur* (first coll) target)
+             (occur* (rest coll) target))))
+(occur* [] 3)
+(occur* [1 2 3 [2 3 4 [2 3][3 5][3]]] 3)
+
+(defn member* [coll target]
+  (cond
+    (empty? coll) false
+    (atom? (first coll)) (if (= target (first coll))
+                           true
+                           (member* (rest coll) target))
+    :else (if (member* (first coll) target)
+            true
+            (member* (rest coll) target))))
+
+(member* [1 2 3 [4 5 [6 [7 8]]]] 9)
+
+(member* [1 2 3 [4 5 [6 [7 8]]]] 7)
+(insert-r-if-match 2 2 7)
+
 (insertr* '(2 1 2 3 2 (2 2)) 2 7)
 
 (def nested-list '((7 1 2 (1 2 7 (1 2 3 7))3 7) 4 7))
 (first (first nested-list))
 
-(defn map-nested [f coll & {:keys [res] :or {res []} }]
-  (cond
-    (empty? coll) res
-    (atom? (first coll))(map-nested f (rest coll) :res (cons (f (first coll)) res))
-    :else (map-nested f (first coll) :res res)
-    ))
+;; (defn map-nested [f coll & {:keys [res] :or {res []} }]
+;;   (cond
+;;     (empty? coll) res
+;;     (atom? (first coll))(map-nested f (rest coll) :res (cons (f (first coll)) res))
+;;     :else (map-nested f (first coll) :res res)
+;;     ))
 
+;; (map-nested inc '(1 2 3))
+;; (map-nested inc '(1 (3 4) 2 3))
 
 (defn atom? [v]((complement coll?) v))
 
-(map-nested inc '(1 2 3))
-(map-nested inc '(1 (3 4) 2 3))
 
 (defn replacement [target item]
   (if-not (= target item)
@@ -539,4 +586,39 @@
 (pwalk-a inc [1 2 [4 5] 3])
 (pwalk-c #(multi-insert-r 2 7 %) '(2 (2 4 (5 2))))
 (pwalk-a #(inc %) '(2 (2 4 (5 2))))
-(+ 2 2)
+
+(defn constrained-fn [f x]
+  {:pre  [(pos? x)
+          (> x 3)]
+   :post [(= % (* 2 x))]}
+  (f x))
+
+(constrained-fn #(* 2 %) 4)
+
+(defn leftmost [coll]
+  (cond
+    (empty? coll) nil
+    (atom? (first coll)) (first coll)
+    :else (leftmost (first coll))))
+
+(leftmost [[[0 9] 1 [7 8]] 2 3])
+
+(= [[0 1] 2 3] [[0 1] 2 4])
+
+(defn myset? [coll]
+  (cond
+    (empty? coll) true
+    (member? (first coll) (rest coll)) false
+    :else (myset? (rest coll))))
+
+(defn makeset [coll]
+  (cond
+    (empty? coll) '()
+    (member? (first coll)
+             (rest coll))(makeset (rest coll))
+    :else (cons (first coll)(makeset (rest coll)))
+    ))
+
+(myset? [2 1 2 3])
+(makeset [1 1 2 3 1 3])
+(set [1 1 2 3 1 3])
