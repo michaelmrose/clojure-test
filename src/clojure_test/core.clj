@@ -619,8 +619,6 @@
     :else (cons (first coll)(makeset (rest coll)))
     ))
 
-(myset? [2 1 2 3])
-(makeset2 [1 1 2 3 1 3 7])
 (set [1 1 2 3 1 3])
 
 (defn makeset2 [coll]
@@ -630,11 +628,12 @@
                   (rest coll)))))
 
 (defn subset [coll1 coll2]
-  (cond
-    (empty? coll1) true
+  (if (empty? coll1) true
     (and
      (member? (first coll1) coll2)
-     (subset (rest coll1) coll2)) true
-    :else false))
+     (subset (rest coll1) coll2))))
 
+(subset [1 4] [1 2 3 4 5])
 (subset [1 7 4] [1 2 3 4 5])
+(myset? [2 1 2 3])
+(makeset2 [1 1 2 3 1 3 7])
