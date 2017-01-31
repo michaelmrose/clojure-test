@@ -627,13 +627,30 @@
          (mrember (first coll)
                   (rest coll)))))
 
-(defn subset [coll1 coll2]
-  (if (empty? coll1) true
+(defn subset? [coll1 coll2]
+  (or (empty? coll1)
     (and
      (member? (first coll1) coll2)
      (subset (rest coll1) coll2))))
 
-(subset [1 4] [1 2 3 4 5])
-(subset [1 7 4] [1 2 3 4 5])
+(defn eqset? [coll1 coll2]
+  (= (set coll1) (set coll2)))
+
+(defn eqset? [c1 c2]
+  (cond
+    (every? empty? [c1 c2]) true
+    (any? empty? [c1 c2]) false
+    :else (eqset? (rest c1) (rember (first c1) c2))))
+(defn eqset? [c1 c2]
+  (and (subset c1 c2)
+       (subset c2 c1)))
+
+(subset? [1 4] [1 2 3 4 5])
+(subset? [1 7 4] [1 2 3 4 5])
 (myset? [2 1 2 3])
 (makeset2 [1 1 2 3 1 3 7])
+
+(eqset? [1 2 3 4 5] [5 5 4 3 2 1])
+
+;; (intersect? [c1 c2]
+;;             ())
