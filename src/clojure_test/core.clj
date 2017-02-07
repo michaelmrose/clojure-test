@@ -657,5 +657,10 @@
 (eqset? [1 2 3 4 5] [5 4 3 2 1])
 (eqset? [1 7] [1 7 2])
 
-;; (intersect? [c1 c2]
-;;             ())
+(defn intersect? [c1 c2]
+  (cond
+    (empty? c1) false
+    (member? (first c1) c2) true
+    :else (intersect? (rest c1) c2)))
+
+(intersect? [1 2] [1 2 3])
