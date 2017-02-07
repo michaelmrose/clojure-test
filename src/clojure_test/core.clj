@@ -666,10 +666,8 @@
     (member? (first c1) c2) true
     :else (intersect? (rest c1) c2)))
 
-(defn intersection [c1 c2 & res]
-  (cond
-    (any? empty? [c1 c2])))
-
 
 (intersect? [7 2 1] [2 3 4])
 (intersect? [1 2] [3 4 5])
+
+(intersect? [1 2] [1 2 3])
