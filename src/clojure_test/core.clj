@@ -9,9 +9,7 @@
             [swiss.arrows :refer :all]
             [clojure.math.numeric-tower :as m]
             [clojure.core.match :refer [match]]
-)
-  
-  )
+            ))
 
 
 (defn -main
@@ -574,6 +572,11 @@
     (cons x seq)
     seq))
 
+(defn conj-nn [col x]
+  (if-not (nil? x)
+    (conj col x)
+    seq))
+
 (cons-nn nil [1 2 3])
 
 (defn pwalk-a [f coll]
@@ -666,8 +669,106 @@
     (member? (first c1) c2) true
     :else (intersect? (rest c1) c2)))
 
+(defn intersect? [c1 c2]
+  (and (every? not-empty [c1 c2])
+       (or (member? (first c1) c2)
+           (intersect? (rest c1) c2))))
+
+(defn intersection
+  ([c1 c2]
+   (intersection c1 c2 []))
+  ([c1 c2 res]
+   (let [f (first c1)
+         r (rest c1)]
+     (cond
+       (any? empty? [c1 c2]) res
+       (member? f c2) (intersection r c2 (conj res f))
+       :else (intersection r c2 res)))))
+
+;; {:keys [valueone valuetwo] :or {valueone 42 valuetwo 43}}
+(defn intersection [c1 c2 & {:keys [res] :or {res []}}]
+  (let [f (first c1)
+        r (rest c1)]
+    (cond
+      (any? empty? [c1 c2]) res
+      (member? f c2) (intersection r c2 :res (conj res f))
+      :else (intersection r c2 :res res))))
+
+(defn intersection [c1 c2]
+  (let [f (first c1)
+        r (rest c1)]
+    (cond
+      (any? empty? [c1 c2]) '()
+      (member? f c2) (cons f (intersection r c2))
+      :else (intersection r c2))))
+
+(defn union [c1 c2]
+  (makeset (concat c1 c2)))
+
+(intersection [2 3 4 5 7][3 4 5 6])
+(intersection '(2 3 4 5 7)'(3 4 5 6))
+
+
+(union [1 2 3 4] [3 4 5 6])
+(union [:stewed :tomatos :and :macaroni :caserole] [:macaroni :and :cheese])
+
 
 (intersect? [7 2 1] [2 3 4])
 (intersect? [1 2] [3 4 5])
+(intersect? [0 1 2] [1 2 3])
+;; (defn inverse-of-membership [x seq]
+;;   (if (member? x seq)
+;;     nil
+;;     x))
 
-(intersect? [1 2] [1 2 3])
+(defn member [x col]
+  (if (member? x col) x nil))
+
+(defn not-member [x col]
+  (if (member? x col) nil x))
+
+(defn set-difference [c1 c2]
+  (cond
+    (empty? c1) '()
+    (member? (first c1) c2)(set-difference (rest c1) c2)
+    :else (cons (first c1) (set-difference (rest c1) c2))))
+
+;; (defn set-difference [c1 c2 & {:keys [res] :or {res []}}]
+;;   (cond
+;;     (empty? c1) '()
+;;     :else (cons-nn (not-member (first c1) c2) (set-difference (rest c1) c2))))
+
+(defn set-difference
+  ([c1 c2]
+   (set-difference c1 c2 []))
+  ([c1 c2 res]
+   (if (empty? c1) res
+       (recur (rest c1) c2 (cons-nn (not-member (first c1) c2) res)))))
+
+(defn set-difference
+  ([c1 c2]
+   (set-difference c1 c2 []))
+  ([c1 c2 res]
+   (let [val (not-member (first c1) c2)]
+     (if (empty? c1) res
+         (recur (rest c1) c2 (if (not (nil? val))
+                               (conj res val)
+                               res))))))
+(defn set-difference
+  ([c1 c2]
+   (filter identity (set-difference c1 c2 [])))
+  ([c1 c2 res]
+   (let [val (not-member (first c1) c2)]
+     (if (empty? c1) res
+         (recur (rest c1) c2 
+                (conj res val))))))
+(defn set-difference [c1 c2]
+  (map-nn #(not-member % c2) c1))
+
+(defn set-difference [c1 c2]
+  (filter identity (map #(not-member % c2) c1)))
+
+(set-difference [1 2 3 4] [3 4 5 6])
+(set-difference  (range 1000)(range 999))
+
+(time (dotimes [n 10] (set-difference (range 10) (range 8)) ))
