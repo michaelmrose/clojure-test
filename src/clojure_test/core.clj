@@ -419,11 +419,12 @@
     :else (pick (rest col) n :index (inc index))))
 
 (defn slice [coll beg end]
-  (-<> (drop (dec beg) coll)
-       (take (- end (dec beg)) <>)))
+  (let [end (if (number? end) end (count coll))]
+    (-<> (drop (dec beg) coll)
+         (take (- end (dec beg)) <>))))
 
-(defn slice [coll beg end]
-  (take (inc (- end beg)) (drop (dec beg) coll)))
+;; (defn slice [coll beg end]
+;;   (take (inc (- end beg)) (drop (dec beg) coll)))
 
 (defn pick [col n & {:keys [index] :or {index 1}}]
   (if (= index n)
@@ -756,12 +757,13 @@
                                res))))))
 (defn set-difference
   ([c1 c2]
-   (filter identity (set-difference c1 c2 [])))
+   (into [] (filter identity (set-difference c1 c2 []))))
   ([c1 c2 res]
    (let [val (not-member (first c1) c2)]
      (if (empty? c1) res
          (recur (rest c1) c2 
                 (conj res val))))))
+
 (defn set-difference [c1 c2]
   (map-nn #(not-member % c2) c1))
 
@@ -772,3 +774,14 @@
 (set-difference  (range 1000)(range 999))
 
 (time (dotimes [n 10] (set-difference (range 10) (range 8)) ))
+
+(defn intersect-all [coll]
+  (let [c (intersection (first coll) (second coll))
+        r (slice coll 3 :end)]
+    (if (empty? r)
+      c
+      (recur (cons c r)))))
+
+(intersect-all [[45 7 2] [7 2 8] [7 2]])
+(intersect-all [(range 500) (range 400) (range 100)])
+(intersection [45 7] [7])
