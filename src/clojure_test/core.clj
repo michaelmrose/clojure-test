@@ -676,6 +676,7 @@
            (intersect? (rest c1) c2))))
 
 (defn intersection
+  ([c1]  c1)
   ([c1 c2]
    (intersection c1 c2 []))
   ([c1 c2 res]
@@ -687,21 +688,21 @@
        :else (intersection r c2 res)))))
 
 ;; {:keys [valueone valuetwo] :or {valueone 42 valuetwo 43}}
-(defn intersection [c1 c2 & {:keys [res] :or {res []}}]
-  (let [f (first c1)
-        r (rest c1)]
-    (cond
-      (any? empty? [c1 c2]) res
-      (member? f c2) (intersection r c2 :res (conj res f))
-      :else (intersection r c2 :res res))))
+;; (defn intersection [c1 c2 & {:keys [res] :or {res []}}]
+;;   (let [f (first c1)
+;;         r (rest c1)]
+;;     (cond
+;;       (any? empty? [c1 c2]) res
+;;       (member? f c2) (intersection r c2 :res (conj res f))
+;;       :else (intersection r c2 :res res))))
 
-(defn intersection [c1 c2]
-  (let [f (first c1)
-        r (rest c1)]
-    (cond
-      (any? empty? [c1 c2]) '()
-      (member? f c2) (cons f (intersection r c2))
-      :else (intersection r c2))))
+;; (defn intersection [c1 c2]
+;;   (let [f (first c1)
+;;         r (rest c1)]
+;;     (cond
+;;       (any? empty? [c1 c2]) '()
+;;       (member? f c2) (cons f (intersection r c2))
+;;       :else (intersection r c2))))
 
 (defn union [c1 c2]
   (makeset (concat c1 c2)))
@@ -783,8 +784,52 @@
       (recur (cons c r)))))
 
 (defn intersect-all [coll]
+  (if
+    (empty? (rest coll)) (first coll)
+    (intersection (first coll) (intersect-all (rest coll)))))
+
+(defn intersect-all [coll]
   (reduce intersection coll))
+
 (intersect-all [[45 7 2] [7 2 8] [7 2 9]])
 (intersect-all [[7] [7 2 8] [7 2 9]])
 (intersect-all [(range 40 50) (range 45) (range 40 43)])
+;; (time (dotimes [n 100]
+;;         (intersect-all [(range 40 50) (range 45) (range 40 43)])))
 (intersection [45 7] [7])
+
+(defn pair? [x]
+  (and
+   (coll? x)
+   (= 2 (count (flatten x)))))
+
+;; (defn pair?
+;;   ([x]
+;;    (pair? x 0))
+;;   ([x n]
+;;    (let [n (inc n)
+;;          f (first x)
+;;          r (rest x)]
+;;      (cond
+;;        (empty? r) n
+;;        (atom? f) (pair? r n)
+;;        :else (+ (pair? (first f) n))))))
+
+;; (defn pair? [x]
+;;   (cond
+;;     (empty? x) 0
+;;     (atom? (first x)) (+ 1 (pair? (rest x)))
+;;     :else (+ (pair? [(first (first x))]) (pair? (rest (first x))))))
+
+(defn mycount [x]
+  (if (atom? x) 1
+      (count x)))
+
+(defn recursive-count [coll]
+  (let [atoms (filter atom? coll)
+        colls (filter coll? coll)])
+  (cond
+    (lat? coll) (count coll)
+    :else (+ (count atoms) (recursive-count colls))))
+
+(recursive-count [1 2 3 [4 5]])
