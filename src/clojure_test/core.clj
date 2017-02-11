@@ -782,6 +782,9 @@
       c
       (recur (cons c r)))))
 
-(intersect-all [[45 7 2] [7 2 8] [7 2]])
-(intersect-all [(range 500) (range 400) (range 100)])
+(defn intersect-all [coll]
+  (reduce intersection coll))
+(intersect-all [[45 7 2] [7 2 8] [7 2 9]])
+(intersect-all [[7] [7 2 8] [7 2 9]])
+(intersect-all [(range 40 50) (range 45) (range 40 43)])
 (intersection [45 7] [7])
