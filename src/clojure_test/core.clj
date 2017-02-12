@@ -806,14 +806,15 @@
     (empty? (rest (rest coll))) true
     :else false))
 
-(defn pair? [coll]
-  (= 2 (rcount coll)))
 (defn rcount [coll]
   (apply +  (flatten (pwalk-a (fn [a] 1) coll))))
 
+(defn pair? [coll]
+  (= 2 (rcount coll)))
+
 (rcount [1 2 [3 4]])
 
-(pair? [[1 2]])
+(pair? [[1 [1]][1]])
 ;; (defn pair? [x]
 ;;   (and
 ;;    (coll? x)
