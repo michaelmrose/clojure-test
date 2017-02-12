@@ -813,7 +813,7 @@
 
 (rcount [1 2 [3 4]])
 
-(pair? [2 [2 ]])
+(pair? [[1 2]])
 ;; (defn pair? [x]
 ;;   (and
 ;;    (coll? x)
