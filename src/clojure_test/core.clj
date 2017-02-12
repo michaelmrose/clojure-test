@@ -798,10 +798,26 @@
 ;;         (intersect-all [(range 40 50) (range 45) (range 40 43)])))
 (intersection [45 7] [7])
 
-(defn pair? [x]
-  (and
-   (coll? x)
-   (= 2 (count (flatten x)))))
+(defn pair? [coll]
+  (cond
+    (empty? coll) false
+    (atom? coll) false
+    (empty? (rest coll)) false
+    (empty? (rest (rest coll))) true
+    :else false))
+
+(defn pair? [coll]
+  (= 2 (rcount coll)))
+(defn rcount [coll]
+  (apply +  (flatten (pwalk-a (fn [a] 1) coll))))
+
+(rcount [1 2 [3 4]])
+
+(pair? [2 [2 ]])
+;; (defn pair? [x]
+;;   (and
+;;    (coll? x)
+;;    (= 2 (count (flatten x)))))
 
 ;; (defn pair?
 ;;   ([x]
@@ -821,15 +837,15 @@
 ;;     (atom? (first x)) (+ 1 (pair? (rest x)))
 ;;     :else (+ (pair? [(first (first x))]) (pair? (rest (first x))))))
 
-(defn mycount [x]
-  (if (atom? x) 1
-      (count x)))
+;; (defn mycount [x]
+;;   (if (atom? x) 1
+;;       (count x)))
 
-(defn recursive-count [coll]
-  (let [atoms (filter atom? coll)
-        colls (filter coll? coll)])
-  (cond
-    (lat? coll) (count coll)
-    :else (+ (count atoms) (recursive-count colls))))
+;; (defn recursive-count [coll]
+;;   (let [atoms (filter atom? coll)
+;;         colls (filter coll? coll)])
+;;   (cond
+;;     (lat? coll) (count coll)
+;;     :else (+ (count atom?) (recursive-count coll))))
 
-(recursive-count [1 2 3 [4 5]])
+;; (recursive-count [1 2 3 [4 5]])
