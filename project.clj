@@ -6,7 +6,7 @@
   :dependencies [
                  [com.rpl/specter "0.13.0"]
                  [mvxcvi/puget "1.0.1"]
-                 [org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/math.numeric-tower "0.0.4"]
                  ;; [org.skummet/clojure "1.7.0-r2"]
                  [swiss-arrows "1.0.0"]

@@ -3,6 +3,7 @@
   (:refer-clojure)
   (:require [clojure.string :as string]
             ;; [clojure.core :refer [first rest] :rename {first car rest cdr}]
+            [clojure.core :refer [any?] :rename {any? anything?}]
             [com.rpl.specter :as specter :refer [transform]]
             [puget.printer :as puget]
             [thoughts.core :as wtf :refer [answer]]
@@ -48,6 +49,8 @@
 (defn within
   [low high number]
   (and (>= number low)(<= number high))) 
+
+(within 2 4 1)
 
 (defn rev
   ([col] (rev col []))
@@ -206,11 +209,55 @@
 (mins-r 2 7 [1 2 3 2 4 2 5])
 (mins-l 2 7 [1 2 3 2 4 2 5])
 
+(defn seqR [v old new]
+  (if (= v old)
+    [old new]
+    [v]))
+(defn seqL [v old new]
+  (if (= v old)
+    [new old]
+    [v]))
+
+(defn subsinner [v old new]
+  (if (= v old)
+    [new]
+    [v]))
+
+(subsinner 1 2 7)
+
+(defn insert-d2 [old new l f]
+  (if
+    (empty? l) '()
+    (concat (f (first l) old new) (insert-d2 old new (rest l) f))))
+
+(defn insert-l2 [old new l]
+  (insert-d2 old new l seqL))
+(defn insert-r2 [old new l]
+  (insert-d2 old new l seqR))
+
+(defn insert-d3 [f]
+  (fn inner [old new l]
+    (if
+        (empty? l) '()
+        (concat (f (first l) old new) (inner old new (rest l))))))
+
+(def insert-r3 (insert-d3 seqR))
+(def insert-l3 (insert-d3 seqL))
+(def subst2 (insert-d3 subsinner))
+(subst2 2 7 [1 2 3])
+
+
+(insert-r3 2 7 [1 2 3])
+(insert-l3 2 7 [1 2 3])
+
+;; (insert-d2 2 7 [1 2 3] seqL)
 (defn insert-d [m l]
   (cond
     (not (member? (:old m) l)) false
     (identical? (first l) (:old m)) (concat (vals m)(rest l))
     :else (cons (first l) (insert-d m (rest l)))))
+
+(insert-d {:new 7 :old 2} [1 2 3])
 
 
 
@@ -570,7 +617,9 @@
 
 (defn cons-nn [x seq]
   (if-not (nil? x)
-    (cons x seq)
+    (if (seq? seq)
+      (cons x seq)
+      (cons x (cons seq '())))
     seq))
 
 (defn conj-nn [col x]
@@ -580,16 +629,16 @@
 
 (cons-nn nil [1 2 3])
 
-(defn pwalk-a [f coll]
+(defn rmap [f coll]
   (clojure.walk/prewalk #(if (atom? %)(f %) %) coll))
 
 (defn pwalk-c [f coll]
   (clojure.walk/prewalk #(if (coll? %)(f %) %) coll))
 
 (pwalk-c #(rember-simple % 7) nested-list)
-(pwalk-a inc [1 2 [4 5] 3])
+(rmap inc [1 2 [4 5] 3])
 (pwalk-c #(multi-insert-r 2 7 %) '(2 (2 4 (5 2))))
-(pwalk-a #(inc %) '(2 (2 4 (5 2))))
+(rmap #(inc %) '(2 (2 4 (5 2))))
 
 (defn constrained-fn [f x]
   {:pre  [(pos? x)
@@ -631,9 +680,9 @@
          (mrember (first coll)
                   (rest coll)))))
 
-(time (dotimes [n 300] (makeset [1 1 2 3 1 3 7])))
-(time (dotimes [n 300] (makeset2 [1 1 2 3 1 3 7])))
-(time (makeset2 [1 1 2 3 1 3 7]))
+;; (time (dotimes [n 300] (makeset [1 1 2 3 1 3 7])))
+;; (time (dotimes [n 300] (makeset2 [1 1 2 3 1 3 7])))
+;; (time (makeset2 [1 1 2 3 1 3 7]))
 
 (defn subset? [coll1 coll2]
   (or (empty? coll1)
@@ -726,6 +775,8 @@
 (defn member [x col]
   (if (member? x col) x nil))
 
+(def not-member? (complement member?))
+
 (defn not-member [x col]
   (if (member? x col) nil x))
 
@@ -774,7 +825,7 @@
 (set-difference [1 2 3 4] [3 4 5 6])
 (set-difference  (range 1000)(range 999))
 
-(time (dotimes [n 10] (set-difference (range 10) (range 8)) ))
+;; (time (dotimes [n 10] (set-difference (range 10) (range 8)) ))
 
 (defn intersect-all [coll]
   (let [c (intersection (first coll) (second coll))
@@ -807,46 +858,77 @@
     :else false))
 
 (defn rcount [coll]
-  (apply +  (flatten (pwalk-a (fn [a] 1) coll))))
+  (apply +  (flatten (rmap (fn [a] 1) coll))))
 
-(defn pair? [coll]
-  (= 2 (rcount coll)))
+;; (defn pair? [coll]
+;;   (= 2 (rcount coll)))
 
 (rcount [1 2 [3 4]])
 
 (pair? [[1 [1]][1]])
-;; (defn pair? [x]
-;;   (and
-;;    (coll? x)
-;;    (= 2 (count (flatten x)))))
 
-;; (defn pair?
-;;   ([x]
-;;    (pair? x 0))
-;;   ([x n]
-;;    (let [n (inc n)
-;;          f (first x)
-;;          r (rest x)]
-;;      (cond
-;;        (empty? r) n
-;;        (atom? f) (pair? r n)
-;;        :else (+ (pair? (first f) n))))))
+(defn myset? [l]
+  (cond
+   (empty? l) true
+   (and (not-member? (first l) (rest l)) (myset? (rest l))) true
+   :else false))
 
-;; (defn pair? [x]
+(defn rel? [l]
+  (every? pair? l))
+
+
+(myset? [1 1 2])
+
+(defn fun? [l]
+  (and
+   (rel? l)
+   (myset? (map first l))))
+
+(defn fullfun? [l]
+  (and
+   (rel? l)
+   (every? myset? [(map first l) (map second l)])))
+
+(defn funlookup [fun val]
+  (cond
+    (not (fun? fun)) nil
+    (empty? fun) nil
+    (= val (first (first fun))) (second (first fun))
+    :else (funlookup (rest fun) val))
+  )
+
+(defn add-to-table [name val table]
+  (conj table [name val]))
+
+(-<> [[3 "three"] [4 "four"]]
+     (add-to-table 5 "five" <> )
+     (funlookup <> 5))
+(let [t [[3 "three"][ 4 "four"]]
+      newtable (add-to-table 5 "five" t)
+      res (funlookup newtable 5)]
+  res)
+
+(funlookup (add-to-table 5 "five" [[3 "three"] [4 "four"]]) 5)
+(fun? [[1 2][3 4]])
+(fullfun? [[1 2][3 4]])
+(fullfun? [[1 2][3 2]])
+(funlookup [[1 2][3 4][:test "fuck"]] :test)
+(funlookup [[1 2][3 4][:test]] :test)
+(funlookup [[1 2][3 4][:test "fuck"]] :testme)
+
+;; (defn mymap [f coll]
 ;;   (cond
-;;     (empty? x) 0
-;;     (atom? (first x)) (+ 1 (pair? (rest x)))
-;;     :else (+ (pair? [(first (first x))]) (pair? (rest (first x))))))
+;;     (empty? coll) '()
+;;     (every? atom? coll) (cons (f (first coll)) (mymap f (rest coll)))
+;;     :else (rmap f coll)))
 
-;; (defn mycount [x]
-;;   (if (atom? x) 1
-;;       (count x)))
+(rmap #(+ 7 %) [1 2 3[4 5]])
 
-;; (defn recursive-count [coll]
-;;   (let [atoms (filter atom? coll)
-;;         colls (filter coll? coll)])
-;;   (cond
-;;     (lat? coll) (count coll)
-;;     :else (+ (count atom?) (recursive-count coll))))
+(println "fuck")
 
-;; (recursive-count [1 2 3 [4 5]])
+(def Y (fn [f]
+         ((fn [x]
+            (x x))
+          (fn [x]
+            (f (fn [y]
+                 ((x x) y)))))))
