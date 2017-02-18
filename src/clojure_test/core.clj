@@ -814,6 +814,16 @@
 (rcount [1 2 [3 4]])
 
 (pair? [[1 2]])
+
+(defn rel? [l]
+  (every? pair? l))
+
+(rel? [[1 2][2 [2 4]]])
+
+;; (defn isset? [l]
+;;   (every? #))
+
+
 ;; (defn pair? [x]
 ;;   (and
 ;;    (coll? x)
