@@ -342,3 +342,39 @@
 ;; (p hobbit-body)
 
 ;; (filter #(within 2 3 (:month %1)) food-journal)
+
+;; (defn pair? [x]
+;;   (and
+;;    (coll? x)
+;;    (= 2 (count (flatten x)))))
+
+;; (defn pair?
+;;   ([x]
+;;    (pair? x 0))
+;;   ([x n]
+;;    (let [n (inc n)
+;;          f (first x)
+;;          r (rest x)]
+;;      (cond
+;;        (empty? r) n
+;;        (atom? f) (pair? r n)
+;;        :else (+ (pair? (first f) n))))))
+
+;; (defn pair? [x]
+;;   (cond
+;;     (empty? x) 0
+;;     (atom? (first x)) (+ 1 (pair? (rest x)))
+;;     :else (+ (pair? [(first (first x))]) (pair? (rest (first x))))))
+
+;; (defn mycount [x]
+;;   (if (atom? x) 1
+;;       (count x)))
+
+;; (defn recursive-count [coll]
+;;   (let [atoms (filter atom? coll)
+;;         colls (filter coll? coll)])
+;;   (cond
+;;     (lat? coll) (count coll)
+;;     :else (+ (count atom?) (recursive-count coll))))
+
+;; (recursive-count [1 2 3 [4 5]])
