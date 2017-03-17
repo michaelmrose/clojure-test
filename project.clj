@@ -16,7 +16,7 @@
   :main ^:skip-aot clojure-test.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx200m" "-server"]
-  :repl-options {:port 5000}
+  :repl-options {:port 5001}
   ;; :jvm-opts ["-Xmx200m" "-server" "-XX:+TieredCompilation" "-XX:TieredStopAtLevel=1"]
   :profiles {:uberjar {:aot :all}}
   )

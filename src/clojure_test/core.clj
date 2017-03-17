@@ -45,6 +45,7 @@
 (defn beg [col]
   (take (-(count col)1) col))
 
+(beg [1 2 3])
 
 (defn within
   [low high number]
@@ -909,6 +910,7 @@
    (rel? l)
    (every? myset? [(map first l) (map second l)])))
 
+
 (defn funlookup [fun val]
   (cond
     (not (fun? fun)) nil
@@ -944,8 +946,22 @@
 
 (rmap #(+ 7 %) [1 2 3[4 5]])
 
-(println "fuck")
+(some pos? [-1 -2 1])
+(any? pos? [1 2 3] )
+(anything? nil)
 
+
+
+(defn two-in-a-row? [l]
+  (cond
+    (< (count l) 2) false
+    (apply = (slice l 1 2)) true
+    :else (two-in-a-row? (slice l 2 :end))))
+
+(two-in-a-row? [1 2 3 3 5])
+(two-in-a-row? [1 2 2])
+(two-in-a-row? [1 1 2])
+(two-in-a-row? [])
 (def Y (fn [f]
          ((fn [x]
             (x x))
