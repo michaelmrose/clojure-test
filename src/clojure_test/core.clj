@@ -8,6 +8,7 @@
             [swiss.arrows :refer :all]
             [clojure.math.numeric-tower :as m]
             [clojure.core.match :refer [match]]
+            [clojure.spec :as s]
             ))
 
 
@@ -20,8 +21,6 @@
 (defn map-nn [f col]
   (remove nil? (map f col)))
 
-
-(beg [1 2 3])
 
 (defn within
   [low high number]
@@ -38,6 +37,7 @@
     (empty? col) false
     :else (or (identical? (first col) x)
               (member? x (rest col)))))
+
 (declare listify)
 
 (defn contains-g? [t l]
@@ -65,21 +65,13 @@
 ;; (defn pwalk-c [f coll]
 ;;   (clojure.walk/prewalk #(if (coll? %)(f %) %) coll))
 
-(defn two-in-a-row? [l]
-  (cond
-    (< (count l) 2) false
-    (apply = (slice l 1 2)) true
-    :else (two-in-a-row? (slice l 2 :end))))
-(two-in-a-row? [1 2 3 3 5])
-(two-in-a-row? [1 2 2])
-(two-in-a-row? [1 1 2])
-(two-in-a-row? [])
 (def Y (fn [f]
          ((fn [x]
             (x x))
           (fn [x]
             (f (fn [y]
                  ((x x) y)))))))
+
 (defn find-thing [needle haystack]
   (keep-indexed #(when (= %2 needle) %1) haystack))
 
@@ -92,7 +84,45 @@
       (= a b) true
       :else (recur (slice coll 2 :end)))))
 
+(defn two-in-a-row [coll]
+  (let [[a b & res] coll ]
+    (cond
+      (empty? coll) false
+      (= a b) true
+      :else (recur (rest coll))
+      ))) 
+
+;; (defn two-in-a-row? [l]
+;;   (cond
+;;     (< (count l) 2) false
+;;     (apply = (slice l 1 2)) true
+;;     :else (two-in-a-row? (slice l 2 :end))))
+(any? 7)
+(two-in-a-row [1 2 3 3 5])
+(two-in-a-row [1 2 2])
+(two-in-a-row [1 1 2])
+(two-in-a-row [])
 (two-in-a-row [1 2 3 4])
+(two-in-a-row [1 2 3 3 4])
+
+(defn test-condp [x] 
+  (condp = x
+    0 "got 0"
+    1 "got 1"
+    (str "got " x)))
+
+(def test-condp
+  (fn*
+   ([x]
+    (let*
+        [pred__33365 = expr__33366 x]
+        (if (pred__33365 0 expr__33366)
+          "got 0"
+          (if (pred__33365 1 expr__33366) "got 1" (str "res is " x)))))))
+(test-condp 0)
+
+;; (def != (complement =))
+;; (!= 1 7)
 
 ;; (defn some-fn [foo bar=42 baz=7]
 ;;   (+ foo bar baz))
