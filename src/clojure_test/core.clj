@@ -6,9 +6,12 @@
             [puget.printer :as puget]
             [thoughts.core :as wtf :refer [answer]]
             [swiss.arrows :refer :all]
-            [clojure.math.numeric-tower :as m]
+            [clojure.math.numeric-tower :as math]
             [clojure.core.match :refer [match]]
             [clojure.spec :as s]
+            [cats.core :as m]
+            [cats.builtin]
+            [cats.monad.maybe :as maybe :refer [nothing just]]
             ))
 
 
@@ -109,18 +112,11 @@
   (condp = x
     0 "got 0"
     1 "got 1"
-    (str "got " x)))
+    (str "else branch, got " x)))
 
-(def test-condp
-  (fn*
-   ([x]
-    (let*
-        [pred__33365 = expr__33366 x]
-        (if (pred__33365 0 expr__33366)
-          "got 0"
-          (if (pred__33365 1 expr__33366) "got 1" (str "res is " x)))))))
-(test-condp 0)
-
+(test-condp 17)
+(m/fmap inc (nothing))
+(m/fmap inc [1 2 3])
 ;; (def != (complement =))
 ;; (!= 1 7)
 

@@ -13,6 +13,7 @@
                  [swiss-arrows "1.0.0"]
                  [com.cemerick/pomegranate "0.3.1"]
                  [org.clojure/core.match "0.3.0-alpha4"]
+                 [funcool/cats "2.0.0"]
                 ]
   :main ^:skip-aot clojure-test.core
   :target-path "target/%s"
