@@ -15,6 +15,8 @@
             ))
 
 
+(def != (complement =))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -45,6 +47,8 @@
 
 (defn contains-g? [t l]
   (not (empty? (filter some? (map #(some #{%} l) (listify t))))))
+
+(contains-g? "fuck" [1 2 3 4 "fuck"])
 
 (defn listify [t]
   (if (list? t) t (list t)))
@@ -115,9 +119,10 @@
     (str "else branch, got " x)))
 
 (test-condp 17)
-(m/fmap inc (nothing))
-(m/fmap inc [1 2 3])
-;; (def != (complement =))
+;; (m/fmap inc [(nothing) 2 3])
+;; (map inc (nothing))
+;; (m/fmap inc (nothing))
+;; (m/fmap inc [1 2 3])
 ;; (!= 1 7)
 
 ;; (defn some-fn [foo bar=42 baz=7]
