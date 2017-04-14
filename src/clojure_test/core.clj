@@ -9,9 +9,10 @@
             [clojure.math.numeric-tower :as math]
             [clojure.core.match :refer [match]]
             [clojure.spec :as s]
-            [cats.core :as m]
+            [cats.core :as m :refer [alet mlet fapply mappend]]
             [cats.builtin]
             [cats.monad.maybe :as maybe :refer [nothing just]]
+            [cats.monad.exception :as exc]
             ))
 
 
@@ -119,10 +120,55 @@
     (str "else branch, got " x)))
 
 (test-condp 17)
-;; (m/fmap inc [(nothing) 2 3])
-;; (map inc (nothing))
-;; (m/fmap inc (nothing))
-;; (m/fmap inc [1 2 3])
+
+(defn mightbe []
+  (let [n (rand-int 11) ]
+    (if (> n 5)
+      (just n)
+      (nothing))))
+
+
+(mlet [a (mightbe)
+         b (just (inc a))]
+  (m/return (* b 2)))
+
+(m/mappend (just [1 2 3])
+           (just [4 5 6]))
+
+(defn i [mv]
+  (m/bind mv identity))
+
+
+(-> (alet [a (just 1)
+           b (mightbe)]
+      (+ a b))
+    (i))
+
+(let [a 1
+      b 41]
+  (+ a b))
+
+(i (fapply (just inc) (just 7)))
+
+
+(defn m-div
+  [x y]
+  (if (zero? y)
+    (maybe/nothing)
+    (maybe/just (/ x y))))
+
+(i (m/foldm m-div 1 [1 0 3]))
+;; => #<Just 1/6>
+
+;; (reduce / [1 0 3])
+
+
+(i (m/foldm m-div 1 [1 2 3]))
+(i (m/foldm m-div 1 [1 0 3]))
+(i (exc/try-or-else (+ 1 nil) 42))
+;; => #<Nothing>
+
+(m/fmap inc [(just 1) 2 3])
 ;; (!= 1 7)
 
 ;; (defn some-fn [foo bar=42 baz=7]
