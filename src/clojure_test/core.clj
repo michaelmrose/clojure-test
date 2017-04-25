@@ -303,7 +303,7 @@
   (cond
     (empty? coll) nil
     (rempty? targets) coll
-    :else (extract (extract-value coll (first targets)) (rest targets))))
+    :else (recur (extract-value coll (first targets)) (rest targets))))
 
 (extract colin :markets :name)
 (extract colin :value)
