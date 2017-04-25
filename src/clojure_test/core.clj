@@ -269,6 +269,14 @@
 ;;           (map key))))
 ;;   ([key coll f]
 ;;    (reduce f (extract key coll))))
+(defn flat? [coll]
+  (every? atom coll))
+
+(defn rempty? [coll]
+  (or (and (empty? coll)
+           (flat? coll))
+      (every? empty coll)))
+
 
 (defn extract-value [coll key]
   (into [] (map key (select (walker key) coll))))
@@ -281,21 +289,25 @@
 ;;     (extract-value coll (first targets))
 ;;     (extract (extract-value coll (first targets)) (rest targets))))
 
-(defn extract [coll targets]
-  (let [t (listify targets)]
-    (if (= (count t) 1)
-      (extract-value coll (first t))
-      (extract (extract-value coll (first t)) (rest t)))))
+;; (defn extract [coll targets]
+;;   (let [t (listify targets)]
+;;     (if (= (count t) 1)
+;;       (extract-value coll (first t))
+;;       (extract (extract-value coll (first t)) (rest t)))))
 
-(defn extract [coll targets]
-  (let [t (listify targets)]
-    (if (empty? t) coll
-      (extract (extract-value coll (first t)) (rest t)))))
+;; (defn extract [coll targets]
+;;   (let [t (listify targets)]
+;;     (if (empty? t) coll
+;;       (extract (extract-value coll (first t)) (rest t)))))
+(defn extract [coll & targets]
+  (cond
+    (empty? coll) nil
+    (rempty? targets) coll
+    :else (extract (extract-value coll (first targets)) (rest targets))))
 
-
-(extract colin [:markets :name])
-(extract colin [:value])
+(extract colin :markets :name)
 (extract colin :value)
+
 (into [] (extract colin :value))
 (reduce + (extract-combine colin :value :bullshit))
 (reduce + (extract colin :value))
