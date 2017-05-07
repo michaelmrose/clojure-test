@@ -1,14 +1,17 @@
 (ns clojure-test.core
   (:gen-class)
   (:refer-clojure)
-  (:require [cats.core :as m :refer [alet fapply mappend mlet]]
+  (:require 
+            [cats.core :as m :refer [alet fapply mappend mlet mplus] :rename {mplus ||}]
+            [cats.builtin]
             [cats.monad
+             [either :refer :all]
              [exception :as exc]
              [maybe :as maybe :refer [just nothing]]]
             [cemerick.pomegranate :refer [add-dependencies]]
             [clojure.core.match :refer [match]]
             [clojure.math.numeric-tower :as math]
-            [com.rpl.specter :as specter :refer [transform walker select]]
+            [com.rpl.specter :as specter :refer :all]
             [puget.printer :as puget]
             [special.core :refer [condition manage]]
             [swiss.arrows :refer :all]
@@ -61,11 +64,18 @@
 (find-thing 4 [1 2 3 4 "fuck"])
 
 
-(defn slice [coll beg end]
-  (let [end (if (number? end) end (count coll))]
-    (-<> (drop (dec beg) coll)
+;; (defn slice [coll beg end]
+;;   (let [end (if (number? end) end (count coll))]
+;;     (-<> (drop (dec beg) coll)
+;;          (take (- end (dec beg)) <>))))
+(defn slice
+  ([coll beg]
+   (slice coll beg (count coll)))
+  ([coll beg end]
+   (-<> (drop (dec beg) coll)
          (take (- end (dec beg)) <>))))
 
+(slice [:1 :2 :3 :4] 2 3)
 (defn map-nested [f coll & {:keys [res] :or {res []}}]
   (cond
     (empty? coll) res
@@ -123,8 +133,8 @@
 
 (test-condp 17)
 
-;; (defn i [mv]
-;;   (m/bind mv identity))
+(defn i [mv]
+  (m/bind mv identity))
 
 ;; (defn mightbe []
 ;;   (let [n (rand-int 11)]
@@ -234,7 +244,7 @@
 (def colin
   {:name "Colin"
    :clients [{:name "Fred"
-             :investment-types [{:type :gold
+             :investment-types [{:type :silver
                                  :markets [{:name "Japan"
                                             :value 7000}
 
@@ -257,8 +267,16 @@
      (apply +))
 
 (transform [:outer :max] (fn [n](+ 9 n)) {:outer {:max 30 :min 10}})
+(select [:clients ALL :investment-types ALL :type] colin)
+(select [:client ALL :investment-types ALL :type] colin)
+;; (select [(must :client) ALL :investment-types ALL :type] colin)
+(transform [:clients ALL :investment-types ALL :type] (fn [n] :bullshit) colin)
+(transform [(filterer #(< % 3)) LAST]
+              inc
+              [2 1 3 6 9 4 8])
+;; (extract colin :type)
 
-((juxt :a :b) {:a 1 :b 2})
+;; (juxt #(:a #(:b :c)) {:a 1 :b 2})
 (filter identity [nil 7 nil])
 
 ;; (defn extract
@@ -304,9 +322,10 @@
     (empty? coll) nil
     (rempty? targets) coll
     :else (recur (extract-value coll (first targets)) (rest targets))))
-
 (extract colin :markets :name)
-(extract colin :value)
+(extract colin :markets)
+(extract colin :type)
+(extract colin :markets)
 
 (into [] (extract colin :value))
 (reduce + (extract-combine colin :value :bullshit))
@@ -324,20 +343,16 @@
 (defn flip [f]
   (fn [& args] (apply f (reverse args))))
 
-(defn wrap-last [wrapper steps]
-  (let [last (last steps)
-        wrapped (comp wrapper last)]
-    (replace {last wrapped} steps)))
-
-(fapply (just inc) (nothing))
-
-(call-unless-nil inc 7)
-
 (def nil-chainer {:step-runner call-unless-nil
                   :inner-wrapper identity})
 
 (def list-chainer {:step-runner mapcat
                    :inner-wrapper list})
+
+(defn wrap-last [wrapper steps]
+  (let [last (last steps)
+        wrapped (comp wrapper last)]
+    (replace {last wrapped} steps)))
 
 (defn chain
   [{:keys [step-runner inner-wrapper]} value steps]
@@ -349,3 +364,75 @@
 (chain nil-chainer richard [:pet :mother :owner :name])
 (chain list-chainer (colin :clients) [:investment-types :markets :value])
 (chain list-chainer (richard :clients) [:investment-types :markets :value])
+(m/fmap inc (just 7))
+(m/fmap inc [1 2 3])
+(m/fmap inc (nothing))
+
+
+(defn make-greeter
+  [^String lang]
+  (condp = lang
+    "es" (fn [name] (str "Hola " name))
+    "en" (fn [name] (str "Hello " name))
+    nil))
+
+(defn make-greeter
+  [^String lang]
+  (condp = lang
+    "es" (just (fn [name] (str "Hola " name)))
+    "en" (just (fn [name] (str "Hello " name)))
+    (nothing)))
+
+(defn ucase [s]
+  (.toUpperCase s))
+
+(defn dcase [s]
+  (.toLowerCase s))
+
+(m/fmap ucase (fapply (make-greeter "en") (just "Alex")))
+(m/fmap ucase (fapply (make-greeter "ex") (just "Alex")))
+(fapply (make-greeter "en") (just "Alex"))
+(i (mappend (just [4 5 6]) (just [1 2 3]) (nothing)))
+(let [mgr (fapply (make-greeter "en") (just "Alex"))
+      upper (m/fmap ucase mgr)]
+  upper)
+
+(m/mlet [name (just "Alex")
+         bs (just 7)
+         morebs (just (inc bs))]
+  (m/return morebs))
+
+
+(m/mlet [a (maybe/just 1)
+         b (maybe/just (inc a))]
+  (m/return (* b 2)))
+mlet
+
+(-<> (fapply (make-greeter "en") (just "Alex"))
+     (m/fmap ucase <>)
+     (m/fmap dcase <>)
+     (i))
+;; (-<> ((make-greeter "en") "Frank")
+;;      (.toUpperCase)
+;;      )
+(i (m/fmap ucase (alet [name (just "bob")
+                        greeter (make-greeter "en")]
+                   (greeter name))))
+;; (-<> (make-greeter "en")
+;;      (apply <> ["Bob"])
+;;      (.toUpperCase <>))
+
+(i (fapply (make-greeter "es") (just "Alex")))
+;; => #<Just "Hola Alex">
+(fapply (make-greeter "es") (just "Alex"))
+
+(fapply (make-greeter "en") (just "Alex"))
+;; => #<Just "Hello Alex">
+
+(fapply (make-greeter "it") (just "Alex"))
+;; => #<Nothing>
+
+(left "fuck")
+(right "fuck")
+(m/mplus (nothing) (just 7))
+(|| (nothing) (just 7) (just 8))
