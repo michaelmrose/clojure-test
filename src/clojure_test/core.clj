@@ -2,7 +2,7 @@
   (:gen-class)
   (:refer-clojure)
   (:require 
-            [cats.core :as m :refer [alet fapply mappend mlet mplus] :rename {mplus ||}]
+           [cats.core :as m :refer [alet fapply mappend mlet mplus] :rename {mplus ||}]
             [cats.builtin]
             [cats.monad
              [either :refer :all]
@@ -27,7 +27,8 @@
 
 (puget/pprint 7)
 (math/abs 7)
-
+(defn beg [col]
+  (take (-(count col)1) col))
 (defn listify [t]
   (if (coll? t) (into [] t) [t]))
 
@@ -40,6 +41,8 @@
 (defn map-nn [f col] (remove nil? (map f col)))
 
 (defn within
+  "Returns true if NUMBER is within 
+  LOW inclusive and HIGH inclusive"
   [low high number]
   (and (>= number low) (<= number high)))
 
@@ -130,7 +133,6 @@
     0 "got 0"
     1 "got 1"
     (str "else branch, got " x)))
-
 (test-condp 17)
 
 (defn i [mv]
@@ -178,7 +180,7 @@
 
 ;; (i (m/foldm m-div 1 [1 2 3]))
 ;; (i (m/foldm m-div 1 [1 0 3]))
-;; (i (exc/try-or-else (+ 1 nil) 42))
+(i (exc/try-or-else (+ 1 nil) 42))
 ;; => #<Nothing>
 
 ;; (m/fmap inc [(just 1) 2 3])
@@ -397,16 +399,15 @@
       upper (m/fmap ucase mgr)]
   upper)
 
-(m/mlet [name (just "Alex")
+(mlet [name (just "Alex")
          bs (just 7)
          morebs (just (inc bs))]
   (m/return morebs))
 
 
-(m/mlet [a (maybe/just 1)
+(mlet [a (maybe/just 1)
          b (maybe/just (inc a))]
   (m/return (* b 2)))
-mlet
 
 (-<> (fapply (make-greeter "en") (just "Alex"))
      (m/fmap ucase <>)
@@ -431,8 +432,31 @@ mlet
 
 (fapply (make-greeter "it") (just "Alex"))
 ;; => #<Nothing>
-
 (left "fuck")
 (right "fuck")
 (m/mplus (nothing) (just 7))
 (|| (nothing) (just 7) (just 8))
+(+ 7 (+ 7 60))
+
+(beg [1 2 3])
+(-<> (+ 7 7)
+     (+ 2 <>))
+
+(def vs [:a nil :c])
+(def ps [:1 :2 :3 :4 :5 :6 :7])
+(defn nn [x]
+  (filter #(not-any? nil? %) x))
+
+(nn (for [v vs
+          p ps]
+      [v p]))
+
+(filter #(not-any? nil? %)(for [v vs
+                                p ps]
+                            [v p]))
+;; + 7 7 | + 2 <>
+;; + 7 7 -> + 2 <>
+;; + 7 7 => + 2 <>
+;; (+ 7 7) | (+ 2 <>)
+
+(ucase "fuck")
