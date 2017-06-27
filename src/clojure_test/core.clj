@@ -1,22 +1,30 @@
 (ns clojure-test.core
   (:gen-class)
   (:refer-clojure)
-  (:require 
-           [cats.core :as m :refer [alet fapply mappend mlet mplus] :rename {mplus ||}]
-            [cats.builtin]
-            [cats.monad
-             [either :refer :all]
-             [exception :as exc]
-             [maybe :as maybe :refer [just nothing]]]
-            [cemerick.pomegranate :refer [add-dependencies]]
-            [clojure.core.match :refer [match]]
-            [clojure.math.numeric-tower :as math]
-            [com.rpl.specter :as specter :refer :all]
-            [puget.printer :as puget]
-            [special.core :refer [condition manage]]
-            [swiss.arrows :refer :all]
-            [thoughts.core :as wtf :refer [answer]]))
+  (:import
+   [java.util Random])
+  (:require
+   [cats.core :as m :refer [alet fapply mappend mlet mplus] :rename {mplus ||}]
+   [cats.builtin]
+   [clojure.java.io :refer [reader]]
+   [cats.monad
+    [either :refer :all]
+    [exception :as exc]
+    [maybe :as maybe :refer [just nothing]]]
+   [cemerick.pomegranate :refer [add-dependencies]]
+   [clojure.core.match :refer [match]]
+   [clojure.math.numeric-tower :as math]
+   [com.rpl.specter :as specter :refer :all]
+   [puget.printer :as puget]
+   [special.core :refer [condition manage]]
+   [swiss.arrows :refer :all]
+   [thoughts.core :as wtf :refer [answer]]
+   [test.carly.core :as carly :refer [defop]]
+   [clojure.string :as string]
+   [clojure.spec :as s]
+   [clojure.spec.test :as stest]))
 
+(s/check-asserts true)
 (def != (complement =))
 
 (defn -main
@@ -25,10 +33,29 @@
   (println "Fuck you very very much, World!")
   (println "Hello, World!"))
 
+
+(defn last?
+  "Returns true if coll is empty or contains only a singular item"
+  [coll]
+  (not (next coll)))
+
+(last [1 2 3])
+
+(defn car [v]
+  (cond
+    (string? v) (str (first v))
+    (coll? v) (first v)))
+
+(defn cdr [v]
+  (cond
+    (string? v) (string/join (rest v))
+    (coll? v) (rest v)))
 (puget/pprint 7)
 (math/abs 7)
+
 (defn beg [col]
-  (take (-(count col)1) col))
+  (take (- (count col) 1) col))
+
 (defn listify [t]
   (if (coll? t) (into [] t) [t]))
 
@@ -56,29 +83,26 @@
     (empty? col) false
     :else (or (identical? (first col) x)
               (member? x (rest col)))))
-
-;; (listify 7)
-;; (listify [7])
-
 (defn contains-item? [t l]
   (if (not-empty (find-thing t l)) true false))
 
 (contains-item? "fuck" [1 2 3 4 "fuck"])
 (find-thing 4 [1 2 3 4 "fuck"])
 
-
 ;; (defn slice [coll beg end]
 ;;   (let [end (if (number? end) end (count coll))]
 ;;     (-<> (drop (dec beg) coll)
 ;;          (take (- end (dec beg)) <>))))
+
 (defn slice
   ([coll beg]
    (slice coll beg (count coll)))
   ([coll beg end]
    (-<> (drop (dec beg) coll)
-         (take (- end (dec beg)) <>))))
+        (take (- end (dec beg)) <>))))
 
 (slice [:1 :2 :3 :4] 2 3)
+
 (defn map-nested [f coll & {:keys [res] :or {res []}}]
   (cond
     (empty? coll) res
@@ -97,7 +121,6 @@
           (fn [x]
             (f (fn [y]
                  ((x x) y)))))))
-
 
 (def not-member? (complement member?))
 
@@ -120,6 +143,7 @@
 ;;     (< (count l) 2) false
 ;;     (apply = (slice l 1 2)) true
 ;;     :else (two-in-a-row? (slice l 2 :end))))
+
 (any? 7)
 (two-in-a-row [1 2 3 3 5])
 (two-in-a-row [1 2 2])
@@ -133,6 +157,7 @@
     0 "got 0"
     1 "got 1"
     (str "else branch, got " x)))
+
 (test-condp 17)
 
 (defn i [mv]
@@ -152,7 +177,6 @@
 ;;          (m/return (* b 2))))
 ;; (m/mappend (just [1 2 3])
 ;;            (just [4 5 6]))
-
 
 
 ;; (-> (alet [a (just 1)
@@ -246,17 +270,16 @@
 (def colin
   {:name "Colin"
    :clients [{:name "Fred"
-             :investment-types [{:type :silver
-                                 :markets [{:name "Japan"
-                                            :value 7000}
+              :investment-types [{:type :silver
+                                  :markets [{:name "Japan"
+                                             :value 7000}
 
-                                           {:name "America"
-                                            :value 1000
-                                            :bullshit 7
-                                            }]}
-                                {:type :shares
-                                 :markets [{:name "China"
-                                            :value 3000}]}]}]})
+                                            {:name "America"
+                                             :value 1000
+                                             :bullshit 7}]}
+                                 {:type :shares
+                                  :markets [{:name "China"
+                                             :value 3000}]}]}]})
 
 (colin (-> :clients) :investment-types)
 
@@ -268,17 +291,16 @@
      (map :value)
      (apply +))
 
-(transform [:outer :max] (fn [n](+ 9 n)) {:outer {:max 30 :min 10}})
+(transform [:outer :max] (fn [n] (+ 9 n)) {:outer {:max 30 :min 10}})
 (select [:clients ALL :investment-types ALL :type] colin)
 (select [:client ALL :investment-types ALL :type] colin)
 ;; (select [(must :client) ALL :investment-types ALL :type] colin)
 (transform [:clients ALL :investment-types ALL :type] (fn [n] :bullshit) colin)
 (transform [(filterer #(< % 3)) LAST]
-              inc
-              [2 1 3 6 9 4 8])
-;; (extract colin :type)
+           inc
+           [2 1 3 6 9 4 8])
+;; (extract colin :investment-types)
 
-;; (juxt #(:a #(:b :c)) {:a 1 :b 2})
 (filter identity [nil 7 nil])
 
 ;; (defn extract
@@ -296,7 +318,6 @@
   (or (and (empty? coll)
            (flat? coll))
       (every? empty coll)))
-
 
 (defn extract-value [coll key]
   (into [] (map key (select (walker key) coll))))
@@ -334,7 +355,7 @@
 (reduce + (extract colin :value))
 (extract  (extract colin :markets) :name)
 (-> (extract colin :markets)
-     (extract :name))
+    (extract :name))
 (select (walker :value) colin)
 (map :name (select (walker :value) colin))
 
@@ -370,7 +391,6 @@
 (m/fmap inc [1 2 3])
 (m/fmap inc (nothing))
 
-
 (defn make-greeter
   [^String lang]
   (condp = lang
@@ -393,21 +413,20 @@
 
 (m/fmap ucase (fapply (make-greeter "en") (just "Alex")))
 (m/fmap ucase (fapply (make-greeter "ex") (just "Alex")))
-(fapply (make-greeter "en") (just "Alex"))
+(i (fapply (make-greeter "en") (just "Alex")))
 (i (mappend (just [4 5 6]) (just [1 2 3]) (nothing)))
 (let [mgr (fapply (make-greeter "en") (just "Alex"))
       upper (m/fmap ucase mgr)]
   upper)
 
 (mlet [name (just "Alex")
-         bs (just 7)
-         morebs (just (inc bs))]
-  (m/return morebs))
-
+       bs (just 7)
+       morebs (just (inc bs))]
+      (m/return morebs))
 
 (mlet [a (maybe/just 1)
-         b (maybe/just (inc a))]
-  (m/return (* b 2)))
+       b (maybe/just (inc a))]
+      (m/return (* b 2)))
 
 (-<> (fapply (make-greeter "en") (just "Alex"))
      (m/fmap ucase <>)
@@ -418,7 +437,7 @@
 ;;      )
 (i (m/fmap ucase (alet [name (just "bob")
                         greeter (make-greeter "en")]
-                   (greeter name))))
+                       (greeter name))))
 ;; (-<> (make-greeter "en")
 ;;      (apply <> ["Bob"])
 ;;      (.toUpperCase <>))
@@ -436,14 +455,18 @@
 (right "fuck")
 (m/mplus (nothing) (just 7))
 (|| (nothing) (just 7) (just 8))
+
 (+ 7 (+ 7 60))
 
 (beg [1 2 3])
+
 (-<> (+ 7 7)
      (+ 2 <>))
 
 (def vs [:a nil :c])
+
 (def ps [:1 :2 :3 :4 :5 :6 :7])
+
 (defn nn [x]
   (filter #(not-any? nil? %) x))
 
@@ -451,12 +474,392 @@
           p ps]
       [v p]))
 
-(filter #(not-any? nil? %)(for [v vs
-                                p ps]
-                            [v p]))
+(-<> (for [v vs
+           p ps]
+       [v p])
+     nn)
+
+(defn fa [x]
+  (+ x 1))
+(defn fb [x]
+  (+ x 1))
+(defn fc [x]
+  (+ x 1))
+
+;; (def fb nil)
+;; (def fb (nothing))
+(-> (fa 7)
+    fb
+    fc)
+(filter #(not-any? nil? %) (for [v vs
+                                 p ps]
+                             [v p]))
 ;; + 7 7 | + 2 <>
 ;; + 7 7 -> + 2 <>
 ;; + 7 7 => + 2 <>
 ;; (+ 7 7) | (+ 2 <>)
 
 (ucase "fuck")
+((comp #(+ 1 %) #(+ 2 %) #(+ 3 %)) 7)
+(defn rstr [s]
+  (string/replace s #"^bob" "fuck"))
+(rstr "bob")
+((comp ucase rstr) "bob")
+(ucase (rstr "bob"))
+(-<> "   bob afasdf adfa     a  "
+     (string/trim <>)
+     (#(string/replace % #"^bob" "fuck") <>)
+     (#(string/replace % #"\s+" " "))
+     ucase)
+((comp ucase string/trim #(string/replace % #"^bob" "fuck")) "bob")
+((partial + 7) 7)
+
+(def goodrecipe
+  {::ingredients
+   ;; {:name "augergines"
+   ;;  :quantity 1
+   ;;  :unit :kg
+   ;;  }
+   ;; {:name "soy sauce"
+   ;;  :quantity 20
+   ;;  :unit :ml}
+   [1 :kg "aubergines"
+    20 :ml "soysauce"]
+   ::steps ["fry the aubergines"
+            "add the soy sauce"]
+   ::result "fried aubergines"})
+
+(s/def ::steps (s/coll-of string?))
+(s/def ::result string?)
+(s/def ::ingredient (s/cat :amount number?
+                           :unit keyword?
+                           :name string?))
+(s/def ::ingredients (s/+ ::ingredient))
+
+(s/def ::recipe (s/keys :req [::ingredients ::steps ::result]))
+
+(s/conform ::ingredients (::ingredients goodrecipe))
+
+(defn validate [spec value]
+  (if-not (s/valid? spec value)
+    (let [explanation (s/explain-data spec value)
+          explanation-string (s/explain-str spec value)
+          issue (last (:clojure.spec/problems explanation))
+          pred (:pred issue)
+          val (:val issue)
+          via (:via issue)
+          msg (str "value: " val " failed predicate " pred " in " via "\n\n\n")]
+      (do (puget/cprint (str "problem found while validating " via))
+          ;; (puget/cprint value)
+          ;; (println msg)
+          (puget/cprint explanation)
+          (throw (ex-info (str msg ": " explanation-string) explanation))))
+    value))
+;; (validate ::nandks [[1] [:fuck]])
+;; (validate ::nandks [[] [:fuck]])
+;; (defn validate [spec value]
+;;   (if-not (s/valid? spec value)
+;;     (throw (ex-info (str "SPEC VIOLATION: "
+;;                          s/explain-str spec value)
+;;                     (s/explain-data spec value)))))
+(defn cook! [recipe]
+  (validate ::recipe recipe)
+  (str (::result recipe)))
+(def badrecipe {::ingredients [1 :kg "apples"]
+                ::steps [99]
+                ::result "diahrea"})
+
+(def badrecipe2 {::ingredients [1 :kg]
+                 ::steps ["eat apples"]
+                 ::result "diahrea"})
+
+(cook! goodrecipe)
+;; (cook! badrecipe)
+;; (cook! badrecipe2)
+(s/def ::nandks (s/cat :nums (s/spec (s/+ number?))
+                       :keys (s/spec (s/+ keyword?))))
+(if (= 1 1) false true)
+(dcase (ucase "fuck"))
+
+(s/valid? ::nandks [[1] [:a :b]])
+(s/valid? ::nandks [["fuck"] [:a :b]])
+(s/valid? ::nandks [[] [:a :b]])
+((frequencies [1 1 2 2 2 3]) 3)
+;; (validate ::nandks [["fuck"][:a :b]])
+;; (defn- handle-node
+;;   [children]
+;;   (fn [child index]
+;;              (let [subtree (render-tree child)
+;;                    last? (= index (dec (count children)))
+;;                    prefix-first (if last? L-branch T-branch)
+;;                    prefix-rest  (if last? SPACER I-branch)]
+;;                (cons (str prefix-first (first subtree))
+;;                      (map #(str prefix-rest %) (next subtree))))))
+
+;; (defn render-tree [{:keys [name children]}]
+;;   (cons
+;;    name
+;;    (mapcat (handle-node children)
+;;            children
+;;            (range))))
+
+;; (let [[_ _ z :as vals] [1 2 3]]
+;;   vals)
+;; (stest/check `fir)
+;; (stest/instrument `fir)
+;; (s/def ::coll #(coll? %))
+(s/def ::number #(number? %))
+#_(defn foo
+    [n]
+    (validate  ::number n)
+    (let [res (cond (> n 40) (+ n 20)
+                    (> n 20) (- (fir n) 20)
+                    :else 0)]
+      (validate ::number res)))
+#_(defn foo
+  [n]
+  (validate ::number n)
+  (validate ::number (cond (> n 40) (+ n 20)
+                           (> n 20) (- (first n) 20)
+                           :else "fuck")))
+
+(defn foo
+  [n]
+  {:pre [(s/valid? ::number n)]
+   :post [(s/valid? ::number %)]}
+
+  (cond (> n 40) (+ n 20)
+        (> n 20) (- (first n) 20)
+        :else "fc"))
+;; (foo 7)
+
+(loop [result [] x 5]
+  (if (< x -3)
+    result
+    (recur (conj result x) (dec x))))
+
+(take 3 (iterate dec 5))
+(defn constrained-fn [f x]
+  {:pre  [(pos? x)]
+   :post [(= % (* 2 x))]}
+  (f x))
+
+(constrained-fn #(* % 2) 5)
+
+#_(defn indexOfAny
+  ([collOfLetters targetString]
+   (indexOfAny collOfLetters targetString 0))
+  ([collOfLetters targetString idx]
+   (cond
+     (empty? targetString) -1
+     (some #(= true %) (map #(= (car targetString) %) collOfLetters)) idx
+     :else (recur collOfLetters (cdr targetString) (inc idx)))))
+
+(defn anyEqualTo [v vs]
+  "Return true if any in vs are equal to v"
+  (or (some #(= true %) (map #(= v %) vs))) false)
+
+(anyEqualTo 9 [7 2 3])
+
+#_(defn indexOfAny [collOfLetters targetString]
+  (loop [collOfLetters collOfLetters targetString targetString idx 0]
+    (cond
+      (empty? targetString) -1
+      (some #(= true %) (map #(= (car targetString) %) collOfLetters)) idx
+      :else (recur collOfLetters (cdr targetString) (inc idx)))))
+
+#_(defn indexOfAny [collOfLetters targetString]
+  (loop [collOfLetters collOfLetters targetString targetString idx 0]
+    (cond
+      (empty? targetString) -1
+      (anyEqualTo (car targetString) collOfLetters) idx
+      :else (recur collOfLetters (cdr targetString) (inc idx)))))
+
+(defn indexOfAny [collOfLetters targetString]
+  (loop [collOfLetters collOfLetters targetString targetString idx 0]
+    (cond (empty? targetString) -1
+          (contains-item? (car targetString) collOfLetters) idx
+          :else (recur collOfLetters (cdr targetString) (inc idx)))))
+
+(indexOfAny ["r" "q"] "zzabyycdxx")
+(indexOfAny ["r" "y"] "zzabyycdxx")
+
+(defn indexed [coll] (map-indexed vector coll))
+
+(defn index-filter [letters s]
+  (when pred
+    (for [[idx letter] (indexed s) :when (contains-item? letter letters)] idx)))
+
+(defn index-filter [pred coll]
+  (when pred
+    (for [[idx elt] (indexed coll) :when (pred elt)] idx)))
+
+(defn indexOfAnyfn [letters s]
+  (first (index-filter letters s)))
+
+(indexOfAny ["d"] "abcdbbb")
+(indexOfAnyfn #{\d \b} "abcdbbb")
+;;----------------------------------------------------
+(defn random-flip []
+  (if (= (rand-int 2) 0)
+    :h :t))
+
+(def reallylongflips (take 7777 (repeatedly random-flip)))
+(def count-if (comp count filter))
+
+(defn count-runs [n pred coll]
+  (count-if #(every? pred %) (partition n 1 coll)))
+
+;; (defn count-runs [n pred coll]
+;;   (count-if #(pred %) (partition n 1 coll)))
+
+;; (defn count-heads-pairs [coll]
+;;   (count-runs 2 #(= [:h :h] %) coll))
+
+;; (defn count-tails-pairs [coll]
+;;   (count-runs 2 #(= [:t :t] %) coll))
+
+;; (defn count-pairs [coll]
+;;   (count-runs 2 #(= (first %) (second %)) coll))
+
+#_(defn count-heads-pairs [coll] 
+  (count-if
+   (fn [x] (= [:h :h] x))
+   (partition 2 1 coll)))
+
+#_(defn count-pairs [coll] 
+  (count-if
+   (fn [x] (=  (first x) (second x)))
+   (partition 2 1 coll)))
+(def count-heads-pairs (partial count-runs 2 #(= % :h)))
+(def count-tails-pairs (partial count-runs 2 #(= % :t)))
+(def count-pairs
+  (comp #(apply + %) (juxt count-heads-pairs count-tails-pairs)))
+
+(time (count-pairs reallylongflips))
+(time (count-heads-pairs reallylongflips))
+(time (count-tails-pairs reallylongflips))
+;;----------------------------------------------------
+
+(defn count-pairs [coll]
+  (count (filter #(= (first %) (second %)) (partition 2 1 coll ))))
+
+#_(defn by-pairs [coll]
+  (let [take-pair (fn [c]
+                    (when (next c) (take 2 c)))]
+    (lazy-seq
+     (when-let [pair (seq (take-pair coll))]
+       (cons pair (by-pairs (rest coll)))))))
+
+(defn preds []
+  (into []
+    (comp (map ns-publics)
+          (mapcat vals)
+          (filter #(string/ends-with? % "?"))
+          (map #(str (.-sym %))))
+    (all-ns)))
+
+(defn non-blank? [line] (not (string/blank? line)))
+
+(defn non-blank-lines-eduction [reader]
+  (eduction (filter non-blank?) (line-seq reader)))
+
+(s/def ::validcolors #{:red :green :blue})
+(s/def ::validnumbers (s/int-in 1 10))
+(s/def ::even-coll (s/coll-of even?))
+(s/def ::n-coll (s/coll-of number?))
+(s/def ::test (s/and ::even-coll ::n-coll))
+(s/valid? ::test [2 5 8])
+(s/def ::my-set (s/coll-of int? :kind set? :min-count 2 :max-count 3))
+(s/explain-str ::my-set #{1 2 3})
+(s/explain-str ::my-set (hash-set 1 2 3 3 2))
+
+#_(defn count-heads-pairs [coll]
+  (loop [cnt 0 coll coll]
+    (if (empty? coll)
+      cnt
+      (recur (if (= :h (first coll) (second coll))
+               (inc cnt)
+               cnt)
+             (rest coll)))))
+
+;; (count-heads-pairs [:h :t :h :h :t :h :h :h :t :h])
+
+;; (take 7 (repeatedly random-flip))
+
+
+
+
+
+
+#_(defn by-pairs [coll]
+  (lazy-seq
+   (if (last? coll) nil
+       (cons (take 2 coll)
+             (by-pairs (rest coll))))))
+
+#_(by-pairs reallylongflips)
+#_(count-heads-pairs reallylongflips)
+
+#_(defn by-pairs [coll]
+  (cond
+    (< (count coll) 2) '()
+    :else (cons (take 2 coll) (by-pairs (rest coll)))))
+
+#_(defn by-pairs [coll]
+  (loop [coll coll res []]
+    (cond
+      (empty? coll) res
+      :else (recur (rest coll) (cons (take 2 coll) res)))))
+
+;; (by-pairs [:h :h :t])
+;; (by-pairs '(:h :h :t :h))
+
+#_(defn countp [pred coll]
+  (count (filter pred coll)))
+
+
+#_(defn count-heads-pairs [coll]
+  (countp #(= [:h :h] %) (by-pairs coll)))
+
+;; (defn count-heads-pairs [coll]
+;;   (count (filter #(= [:h :h] % ) (by-pairs coll))))
+
+;; (defn count-pairs [coll]
+;;   (count (filter #(= (first %) (second %)) (by-pairs coll))))
+
+
+
+;; (count-pairs reallylongflips)
+;; (count-tails-pairs reallylongflips)
+;; (count-heads-pairs reallylongflips)
+
+
+;; (defn count-heads-pairs [coll]
+;;   (count (filter (fn [pair] (every? #(= :h %) pair))
+;;                  (by-pairs coll))))
+;; (def ridiculous (string/join (repeat 2333333 "fuck")))
+
+;; (time (indexOfAny [\f] ridiculous))
+;; (time (indexOfAny #{\f} ridiculous))
+;; (time (indexOfAny ["f"] ridiculous))
+;; (time (count-heads-pairs reallylongflips))
+;; (count-heads-pairs [:h :t :h :h :t :h :h :h :t :h])
+;; (count-heads-pairs [:t :t :h :h :h :h :t])
+;; (count-pairs       [:t :t :h :h :h :h :t])
+;; (count-pairs [:h :h :h])
+;; (count-heads-pairs [:h :h :h])
+;; (declare my-odd? my-even?)
+;; (defn my-odd? [n]
+;;   (if (= n 0)
+;;     false
+;;     #(my-even? (dec n))))
+
+;; (defn my-even? [n]
+;;   "mutually recursive even?"
+;;   (if (= n 0)
+;;     true
+;;     #(my-odd? (dec n))))
+
+;; (trampoline (my-odd? 7))
+

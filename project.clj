@@ -16,11 +16,12 @@
                  [funcool/cats "2.0.0"]
                  [uncomplicate/clojurecl "0.7.1"]
                  [special "0.1.3-Beta1"]
+                 [mvxcvi/test.carly "0.2.0"]
                 ]
   :main ^:skip-aot clojure-test.core
   :target-path "target/%s"
   :jvm-opts ["-Xmx200m" "-server"]
-  :repl-options {:port 5001}
+  :repl-options {:port 5040}
   ;; :jvm-opts ["-Xmx200m" "-server" "-XX:+TieredCompilation" "-XX:TieredStopAtLevel=1"]
   :profiles {:uberjar {:aot :all}}
   )
