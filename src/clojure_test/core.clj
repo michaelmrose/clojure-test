@@ -25,6 +25,7 @@
    [clojure.spec.test :as stest]))
 
 (s/check-asserts true)
+;; (stest/instrument (ns-publics))
 (def != (complement =))
 
 (defn -main
@@ -39,13 +40,14 @@
   [coll]
   (not (next coll)))
 
+(last? [1])
+
 (last [1 2 3])
 
 (defn car [v]
   (cond
     (string? v) (str (first v))
     (coll? v) (first v)))
-
 (defn cdr [v]
   (cond
     (string? v) (string/join (rest v))
@@ -514,31 +516,8 @@
 ((comp ucase string/trim #(string/replace % #"^bob" "fuck")) "bob")
 ((partial + 7) 7)
 
-(def goodrecipe
-  {::ingredients
-   ;; {:name "augergines"
-   ;;  :quantity 1
-   ;;  :unit :kg
-   ;;  }
-   ;; {:name "soy sauce"
-   ;;  :quantity 20
-   ;;  :unit :ml}
-   [1 :kg "aubergines"
-    20 :ml "soysauce"]
-   ::steps ["fry the aubergines"
-            "add the soy sauce"]
-   ::result "fried aubergines"})
 
-(s/def ::steps (s/coll-of string?))
-(s/def ::result string?)
-(s/def ::ingredient (s/cat :amount number?
-                           :unit keyword?
-                           :name string?))
-(s/def ::ingredients (s/+ ::ingredient))
 
-(s/def ::recipe (s/keys :req [::ingredients ::steps ::result]))
-
-(s/conform ::ingredients (::ingredients goodrecipe))
 
 (defn validate [spec value]
   (if-not (s/valid? spec value)
@@ -562,20 +541,8 @@
 ;;     (throw (ex-info (str "SPEC VIOLATION: "
 ;;                          s/explain-str spec value)
 ;;                     (s/explain-data spec value)))))
-(defn cook! [recipe]
-  (validate ::recipe recipe)
-  (str (::result recipe)))
-(def badrecipe {::ingredients [1 :kg "apples"]
-                ::steps [99]
-                ::result "diahrea"})
 
-(def badrecipe2 {::ingredients [1 :kg]
-                 ::steps ["eat apples"]
-                 ::result "diahrea"})
 
-(cook! goodrecipe)
-;; (cook! badrecipe)
-;; (cook! badrecipe2)
 (s/def ::nandks (s/cat :nums (s/spec (s/+ number?))
                        :keys (s/spec (s/+ keyword?))))
 (if (= 1 1) false true)
@@ -839,9 +806,7 @@
 ;;   (count (filter (fn [pair] (every? #(= :h %) pair))
 ;;                  (by-pairs coll))))
 ;; (def ridiculous (string/join (repeat 2333333 "fuck")))
-
-;; (time (indexOfAny [\f] ridiculous))
-;; (time (indexOfAny #{\f} ridiculous))
+;; (time (indexOfAny [\f] ridiculous)) ;; (time (indexOfAny #{\f} ridiculous))
 ;; (time (indexOfAny ["f"] ridiculous))
 ;; (time (count-heads-pairs reallylongflips))
 ;; (count-heads-pairs [:h :t :h :h :t :h :h :h :t :h])
@@ -863,3 +828,70 @@
 
 ;; (trampoline (my-odd? 7))
 
+
+(s/def ::steps (s/coll-of string?))
+(s/def ::result string?)
+(s/def ::ingredient (s/cat :amount number?
+                           :unit keyword?
+                           :name string?))
+(s/def ::ingredients (s/+ ::ingredient))
+
+(s/def ::recipe (s/keys :req [::ingredients ::steps ::result]))
+
+;; (defn ingredient-is-scaled? [recipe item scale]
+;;   (= (:amount item) (* scale (:amount (get-ingredient recipe (:name item))))))
+(defn get-ingredient [recipe item]
+  (first (filter #(= item (:name %))
+                 (s/conform ::ingredients (::ingredients recipe)))))
+(defn ingredient-is-scaled? [recipe item scale]
+  (= (:amount item)
+     (-<> (:name item)
+          (get-ingredient recipe <>)
+          (:amount <>)
+          (* scale <>))))
+
+
+;; (s/def ::doubleingredient ingredient-is-double?)
+
+(def badrecipe {::ingredients [1 :kg "apples"]
+                ::steps [99]
+                ::result "diahrea"})
+
+(def badrecipe2 {::ingredients [1 :kg]
+                 ::steps ["eat apples"]
+                 ::result "diahrea"})
+
+(def goodrecipe
+  {::ingredients
+   [1 :kg "aubergines"
+    20 :ml "soysauce"]
+   ::steps ["fry the aubergines"
+            "add the soy sauce"]
+   ::result "fried aubergines"})
+
+(s/fdef scale-ingredient
+  :args (s/cat :ingredient ::ingredient :factor number?)
+  :ret ::ingredient)
+
+(defn scale-ingredient [ingredient factor]
+  (update ingredient :amount * factor))
+
+(scale-ingredient (first (s/conform ::ingredients (::ingredients goodrecipe))) 2)
+
+
+
+(get-ingredient goodrecipe "soysauce")
+
+
+(s/conform ::ingredients (::ingredients goodrecipe))
+(defn cook! [recipe]
+  (validate ::recipe recipe)
+  (str (::result recipe)))
+
+(mapcat #(inc %) [1 2 3])
+(mapcat #(string/split % #"\d") ["aa1bb" "cc1DD"])
+
+(mapcat reverse [[3 2 1 0] [6 5 4] [9 8 7]])
+(apply concat (map reverse [[1 2 3] [4 5 6]]))
+
+(ingredient-is-scaled? goodrecipe (scale-ingredient (get-ingredient goodrecipe "soysauce") 2) 2)
