@@ -1190,4 +1190,5 @@
 (defn useless-multi-line-fn []
   "one"
   "two"
+
   "four")
