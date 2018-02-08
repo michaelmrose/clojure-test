@@ -1187,8 +1187,5 @@
 (pm-service-charge test-checking)
 (pm-service-charge test-savings)
 
-(defn hello-there []
+(defn fuuuuuck []
   "fuck")
-
-(defn gaaaahhh []
-  "khaaaaaaan!")
