@@ -1187,5 +1187,7 @@
 (pm-service-charge test-checking)
 (pm-service-charge test-savings)
 
-(defn fuuuuuck []
-  "fuck")
+(defn useless-multi-line-fn []
+  "one"
+  "two"
+  "four")
