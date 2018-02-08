@@ -1164,6 +1164,8 @@
 (account-level test-savings)
 
 (:tag test-savings)
+(:tag test-checking)
+
 
 (defn tag-and-type [acct] [(:tag acct) (account-level acct)])
 (tag-and-type test-checking)
@@ -1185,3 +1187,8 @@
 (pm-service-charge test-checking)
 (pm-service-charge test-savings)
 
+(defn hello-there []
+  "fuck")
+
+(defn gaaaahhh []
+  "khaaaaaaan!")
