@@ -11,7 +11,6 @@
     [either :refer :all]
     [exception :as exc]
     [maybe :as maybe :refer [just nothing]]]
-   [cemerick.pomegranate :refer [add-dependencies]]
    [clojure.core.match :refer [match]]
    [clojure.math.numeric-tower :as math]
    [com.rpl.specter :as specter :refer :all]
@@ -19,14 +18,26 @@
    [special.core :refer [condition manage]]
    [swiss.arrows :refer :all]
    [thoughts.core :as wtf :refer [answer]]
-   [test.carly.core :as carly :refer [defop]]
+   ;; [test.carly.core :as carly :refer [defop]]
    [clojure.string :as string]
-   [clojure.spec :as s]
-   [clojure.spec.test :as stest]))
+   [clojure.spec.alpha :as s]
+   [clojure.spec.test.alpha :as stest]
+   [expound.alpha :as expound]
+   [cuerdas.core :as str]
+   [cemerick.pomegranate :refer [add-dependencies]]
+   ))
 
 (s/check-asserts true)
 ;; (stest/instrument (ns-publics))
 (def != (complement =))
+
+(defn deps [dep]
+  (add-dependencies :coordinates dep
+                    :repositories (merge cemerick.pomegranate.aether/maven-central
+                                         {"clojars" "https://clojars.org/repo"})))
+
+
+(deps '[[org.clojure/core.match "0.3.0-alpha5"]])
 
 (defn -main
   "I don't do a whole lot ... yet."
@@ -52,6 +63,7 @@
   (cond
     (string? v) (string/join (rest v))
     (coll? v) (rest v)))
+
 (puget/pprint 7)
 (math/abs 7)
 
@@ -584,11 +596,11 @@
                     :else 0)]
       (validate ::number res)))
 #_(defn foo
-  [n]
-  (validate ::number n)
-  (validate ::number (cond (> n 40) (+ n 20)
-                           (> n 20) (- (first n) 20)
-                           :else "fuck")))
+    [n]
+    (validate ::number n)
+    (validate ::number (cond (> n 40) (+ n 20)
+                             (> n 20) (- (first n) 20)
+                             :else "fuck")))
 
 (defn foo
   [n]
@@ -614,13 +626,13 @@
 (constrained-fn #(* % 2) 5)
 
 #_(defn indexOfAny
-  ([collOfLetters targetString]
-   (indexOfAny collOfLetters targetString 0))
-  ([collOfLetters targetString idx]
-   (cond
-     (empty? targetString) -1
-     (some #(= true %) (map #(= (car targetString) %) collOfLetters)) idx
-     :else (recur collOfLetters (cdr targetString) (inc idx)))))
+    ([collOfLetters targetString]
+     (indexOfAny collOfLetters targetString 0))
+    ([collOfLetters targetString idx]
+     (cond
+       (empty? targetString) -1
+       (some #(= true %) (map #(= (car targetString) %) collOfLetters)) idx
+       :else (recur collOfLetters (cdr targetString) (inc idx)))))
 
 (defn anyEqualTo [v vs]
   "Return true if any in vs are equal to v"
@@ -629,18 +641,18 @@
 (anyEqualTo 9 [7 2 3])
 
 #_(defn indexOfAny [collOfLetters targetString]
-  (loop [collOfLetters collOfLetters targetString targetString idx 0]
-    (cond
-      (empty? targetString) -1
-      (some #(= true %) (map #(= (car targetString) %) collOfLetters)) idx
-      :else (recur collOfLetters (cdr targetString) (inc idx)))))
+    (loop [collOfLetters collOfLetters targetString targetString idx 0]
+      (cond
+        (empty? targetString) -1
+        (some #(= true %) (map #(= (car targetString) %) collOfLetters)) idx
+        :else (recur collOfLetters (cdr targetString) (inc idx)))))
 
 #_(defn indexOfAny [collOfLetters targetString]
-  (loop [collOfLetters collOfLetters targetString targetString idx 0]
-    (cond
-      (empty? targetString) -1
-      (anyEqualTo (car targetString) collOfLetters) idx
-      :else (recur collOfLetters (cdr targetString) (inc idx)))))
+    (loop [collOfLetters collOfLetters targetString targetString idx 0]
+      (cond
+        (empty? targetString) -1
+        (anyEqualTo (car targetString) collOfLetters) idx
+        :else (recur collOfLetters (cdr targetString) (inc idx)))))
 
 (defn indexOfAny [collOfLetters targetString]
   (loop [collOfLetters collOfLetters targetString targetString idx 0]
@@ -690,14 +702,14 @@
 ;;   (count-runs 2 #(= (first %) (second %)) coll))
 
 #_(defn count-heads-pairs [coll] 
-  (count-if
-   (fn [x] (= [:h :h] x))
-   (partition 2 1 coll)))
+    (count-if
+     (fn [x] (= [:h :h] x))
+     (partition 2 1 coll)))
 
 #_(defn count-pairs [coll] 
-  (count-if
-   (fn [x] (=  (first x) (second x)))
-   (partition 2 1 coll)))
+    (count-if
+     (fn [x] (=  (first x) (second x)))
+     (partition 2 1 coll)))
 (def count-heads-pairs (partial count-runs 2 #(= % :h)))
 (def count-tails-pairs (partial count-runs 2 #(= % :t)))
 (def count-pairs
@@ -712,19 +724,19 @@
   (count (filter #(= (first %) (second %)) (partition 2 1 coll ))))
 
 #_(defn by-pairs [coll]
-  (let [take-pair (fn [c]
-                    (when (next c) (take 2 c)))]
-    (lazy-seq
-     (when-let [pair (seq (take-pair coll))]
-       (cons pair (by-pairs (rest coll)))))))
+    (let [take-pair (fn [c]
+                      (when (next c) (take 2 c)))]
+      (lazy-seq
+       (when-let [pair (seq (take-pair coll))]
+         (cons pair (by-pairs (rest coll)))))))
 
 (defn preds []
   (into []
-    (comp (map ns-publics)
-          (mapcat vals)
-          (filter #(string/ends-with? % "?"))
-          (map #(str (.-sym %))))
-    (all-ns)))
+        (comp (map ns-publics)
+              (mapcat vals)
+              (filter #(string/ends-with? % "?"))
+              (map #(str (.-sym %))))
+        (all-ns)))
 
 (defn non-blank? [line] (not (string/blank? line)))
 
@@ -742,13 +754,13 @@
 (s/explain-str ::my-set (hash-set 1 2 3 3 2))
 
 #_(defn count-heads-pairs [coll]
-  (loop [cnt 0 coll coll]
-    (if (empty? coll)
-      cnt
-      (recur (if (= :h (first coll) (second coll))
-               (inc cnt)
-               cnt)
-             (rest coll)))))
+    (loop [cnt 0 coll coll]
+      (if (empty? coll)
+        cnt
+        (recur (if (= :h (first coll) (second coll))
+                 (inc cnt)
+                 cnt)
+               (rest coll)))))
 
 ;; (count-heads-pairs [:h :t :h :h :t :h :h :h :t :h])
 
@@ -760,34 +772,34 @@
 
 
 #_(defn by-pairs [coll]
-  (lazy-seq
-   (if (last? coll) nil
-       (cons (take 2 coll)
-             (by-pairs (rest coll))))))
+    (lazy-seq
+     (if (last? coll) nil
+         (cons (take 2 coll)
+               (by-pairs (rest coll))))))
 
 #_(by-pairs reallylongflips)
 #_(count-heads-pairs reallylongflips)
 
 #_(defn by-pairs [coll]
-  (cond
-    (< (count coll) 2) '()
-    :else (cons (take 2 coll) (by-pairs (rest coll)))))
+    (cond
+      (< (count coll) 2) '()
+      :else (cons (take 2 coll) (by-pairs (rest coll)))))
 
 #_(defn by-pairs [coll]
-  (loop [coll coll res []]
-    (cond
-      (empty? coll) res
-      :else (recur (rest coll) (cons (take 2 coll) res)))))
+    (loop [coll coll res []]
+      (cond
+        (empty? coll) res
+        :else (recur (rest coll) (cons (take 2 coll) res)))))
 
 ;; (by-pairs [:h :h :t])
 ;; (by-pairs '(:h :h :t :h))
 
 #_(defn countp [pred coll]
-  (count (filter pred coll)))
+    (count (filter pred coll)))
 
 
 #_(defn count-heads-pairs [coll]
-  (countp #(= [:h :h] %) (by-pairs coll)))
+    (countp #(= [:h :h] %) (by-pairs coll)))
 
 ;; (defn count-heads-pairs [coll]
 ;;   (count (filter #(= [:h :h] % ) (by-pairs coll))))
@@ -870,8 +882,8 @@
    ::result "fried aubergines"})
 
 (s/fdef scale-ingredient
-  :args (s/cat :ingredient ::ingredient :factor number?)
-  :ret ::ingredient)
+        :args (s/cat :ingredient ::ingredient :factor number?)
+        :ret ::ingredient)
 
 (defn scale-ingredient [ingredient factor]
   (update ingredient :amount * factor))
@@ -895,3 +907,281 @@
 (apply concat (map reverse [[1 2 3] [4 5 6]]))
 
 (ingredient-is-scaled? goodrecipe (scale-ingredient (get-ingredient goodrecipe "soysauce") 2) 2)
+(def current-track (ref "Mars, the Bringer of War"))
+(def current-composer (ref "Holst"))
+(deref current-track)
+@current-track
+(dosync
+ (ref-set current-track "Venus, the Bringer of Peace"))
+
+(dosync
+ (ref-set current-track "Credo")
+ (ref-set current-composer "Byrd"))
+
+@current-composer
+
+(defrecord Message [sender text])
+
+(Message. "Aaron" "Hello")
+
+
+(def mynumber (ref 1 :validator odd?))
+
+(defn incmynumber [n]
+  (dosync (alter mynumber + n)))
+
+(defn decmynumber [n]
+  (dosync (commute mynumber - n)))
+
+(incmynumber 6)
+(decmynumber 2)
+
+
+(defn valid-message? [msg]
+  (and (:sender msg)(:text msg) (= (type msg) clojure_test.core.Message)))
+
+(def validate-message-list  #(every? valid-message? %))
+
+
+(def messages (ref () :validator validate-message-list))
+
+(defn add-message [msg]
+  (dosync (ref-set messages (cons msg @messages))))
+
+
+(defn add-message [msg]
+  (dosync (commute messages conj msg)))
+
+(add-message (->Message "Aaron" "Fuck"))
+(add-message (->Message "Aaron" "fuckity fuck"))
+(add-message (->Message "God" "die bitch"))
+
+(def backup-agent (agent "/home/michael/proj/clojure/clojure-test/output/messages-backup.clj"))
+
+(do (print "----------------------\n")
+    (puget/cprint @messages)
+    (print "----------------------\n"))
+(do (print "----------------------\n")
+    (puget/cprint (slurp @backup-agent))
+    (print "----------------------\n"))
+
+
+
+(defn add-message-with-backup [msg]
+  (dosync
+   (let [snapshot (commute messages conj msg)]
+     (send-off backup-agent (fn [filename]
+                              (spit filename snapshot)
+                              filename)))))
+
+;;-----------------
+(defn add-message-with-backup [msg]
+  (dosync 
+   (let [snapshot (commute messages conj msg)]
+     (send-off backup-agent (fn [filename]
+                              (spit filename snapshot)
+                              filename))
+     snapshot)))
+;;-----------------
+(add-message-with-backup (->Message "John" "Message Seven"))
+;; (restart-agent messages ())
+(defrecord Person [fname lname address])
+
+(defrecord Address [street city state zip])
+
+(def stu (Person. "Stu" "Halloway"
+                  (Address. "200 N Mangum"
+                            "Durham"
+                            "NC"
+                            27701)))
+
+(:lname stu)
+(:fname stu)
+
+(-> stu :address :city)
+
+(assoc stu :fname "Stuart")
+(def blarg (atom 7))
+(reset! blarg 9)
+(deref blarg)
+
+(def current-track (atom {:title "Mars" :composer "Holst"}))
+(swap! current-track assoc :title "Mars")
+(swap! current-track assoc :title "Venus")
+(reset! current-track {:title "Mars" :composer "Holst"})
+
+@current-track
+
+
+(def current-title (ref "Mars"))
+(def current-composer (ref "Holst"))
+(dosync (ref-set current-title "gahhh")
+        (ref-set current-composer "wtf"))
+(dosync (ref-set current-title "Venus")
+        (ref-set current-composer "holst"))
+(dosync (alter current-composer string/capitalize))
+@current-composer
+@current-title
+
+(defn handler [agent err]
+  (println "ERR!" (.getMessage err)))
+
+(def counter (agent 0 :error-handler handler))
+(def counter2 (agent 0 :validator number? :error-handler handler))
+
+(send counter2 #("boo"))
+(agent-error counter)
+(send counter2 inc)
+;; (restart-agent counter 0)
+;; (deref counter2)
+;; (defn slow-increase [a]
+;;   (do (Thread/sleep 3000)
+;;       (send-off a inc)))
+
+;; (do (slow-increase counter)
+;;     (await-for 2000 counter)
+;;     (deref counter))
+;; (set! s/*explain-out* expound/printer)
+
+;; (s/def :example.place/city string?)
+;; (s/def :example.place/state string?)
+;; (s/fdef pr-loc :args (s/cat :city :example.place/city
+;;                             :state :example.place/state))
+;; (defn pr-loc [city state]
+;;   (str city ", " state))
+
+;; (stest/instrument `pr-loc)
+;; (pr-loc "denver" :CO)
+
+;; ;; You can use `explain` without converting to expound
+;; (s/explain :example.place/city 123)
+;; (print "-----------------------------------------------------------------")
+
+;; (def inc-and-filter (comp (map inc) (filter odd?)))
+;; (def special+ (inc-and-filter +))
+;; (special+ 1 1)
+
+;; (transduce (comp (map inc)))
+;; (defn unless [expr form]
+;;   (if (not expr)
+;;     form))
+
+(defmacro unless [expr form]
+  (list 'if expr nil form))
+
+(defmacro unless [expr & forms]
+  (list 'if expr nil (cons 'do forms)))
+
+(unless (= 1 1) (println "fuck"))
+(unless (= 1 2) (println "fuck")(println "me"))
+
+(defmacro chain
+  ([x form] (list '. x form))
+  ([x form & more] (concat (list 'chain (list '. x form)) more)))
+
+(defmacro chain
+  ([x form       ] `(. ~x ~form))
+  ([x form & more] `(~concat (~list chain (~list . ~x ~form)) ~more)))
+
+(defmacro chain
+  ([x form       ] `(. ~x ~form))
+  ([x form & more] `(chain (. ~x ~form) ~@more)))
+
+(macroexpand '(chain arm getHand getFinger))
+
+(let [start (System/nanoTime)
+      result (str "a" "b")]
+  {:result result :elapsed (- (System/nanoTime) start)})
+
+(defmacro bench [expr]
+  `(let [start# (System/nanoTime)
+         result# ~expr]
+     {:result result# :elapsed (- (System/nanoTime) start#)}))
+
+(bench (str "a" "b"))
+(declare fuck this shit)
+(defmacro declare
+  [& names] `(do ~@(map #(list 'def %) names)))
+
+(defn say-hi []
+  (print (str "Hello from thread" (.getName (Thread/currentThread)) "\n")))
+
+(defn say-hi []
+  (-<> (Thread/currentThread)
+       (.getName <>)
+       (str "Hello from thread" <> "\n")
+       (print <>)))
+(dotimes [_ 3]
+  (.start (Thread. say-hi)) )
+
+(. (Thread/currentThread) getName)
+
+(.getName (Thread/currentThread))
+
+(defmulti my-print class)
+
+(defmethod my-print clojure.lang.IPersistentVector [v]
+  (.write *out* "[")
+  (.write *out* (str/join " " v))
+  (.write *out* "]"))
+
+(defmethod my-print String [s]
+  (.write *out* s))
+
+(defmethod my-print nil [_]
+  (.write *out* "nil"))
+
+(defmethod my-print :default [_]
+  (.write *out* (.toString _)))
+
+(defmethod my-print Person [p]
+  (.write *out* (str "name: " (:fname p) " " (:lname p) "\n addr: " (:address p) )))
+
+(defmethod my-print java.util.Collection [c]
+  (.write *out* "(")
+  (.write *out* (str/join " " c))
+  (.write *out* ")"))
+
+(prefer-method my-print java.util.Collection clojure.lang.IPersistentVector)
+(def test-savings  {:id 1 :tag :acc/savings  :balance 10000M})
+(def test-checking {:id 2 :tag :acc/checking :balance 250M})
+
+(defmulti interest-rate :tag)
+
+(defmethod interest-rate :acc/checking [_] 0M)
+
+(defmethod interest-rate :acc/savings [_] 0.05M)
+
+(interest-rate test-checking)
+
+(defmulti account-level :tag)
+(defmethod account-level :acc/checking [acct]
+  (if (>= (:balance acct) 5000) :acc/premium :acc/basic))
+
+(defmethod account-level :acc/savings [acct]
+  (if (>= (:balance acct) 1000) :acc/premium :acc/basic))
+
+(account-level test-savings)
+
+(:tag test-savings)
+
+(defn tag-and-type [acct] [(:tag acct) (account-level acct)])
+(tag-and-type test-checking)
+
+(derive :acc/savings :acc/account)
+(derive :acc/checking :acc/account)
+(defmulti service-charge tag-and-type)
+(defmethod service-charge [:acc/checking :acc/basic] [_] 25)
+(defmethod service-charge [:acc/savings :acc/basic] [_] 10)
+(defmethod service-charge [:acc/premium :acc/account] [_] 0)
+;; (defmethod service-charge [:acc/savings :acc/premium] [_] 0)
+
+(defn pm-service-charge [acct]
+  (match [(:tag acct) (account-level acct)]
+         [:acc/checking :acc/basic] 25
+         [:acc/savings :acc/basic] 10
+         [_ :acc/premium] 0))
+
+(pm-service-charge test-checking)
+(pm-service-charge test-savings)
+
