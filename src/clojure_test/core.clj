@@ -1186,9 +1186,3 @@
 
 (pm-service-charge test-checking)
 (pm-service-charge test-savings)
-
-(defn useless-multi-line-fn []
-  "one"
-  "two"
-
-  "four")
